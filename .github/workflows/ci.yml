@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run unit tests, including mocked live synthesis
+        run: python -m unittest discover -s tests -v
+      - name: Enforce the explicit public-file whitelist
+        run: python scripts/audit_public_payload.py
+      - name: Generate the offline demo without credentials
+        run: python -m newsletter_brief demo --offline --output dist/index.html
+      - name: Confirm the committed Pages artifact is reproducible
+        run: cmp dist/index.html docs/index.html

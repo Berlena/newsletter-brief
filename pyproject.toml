@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "newsletter-brief"
+version = "0.1.0"
+description = "A source-visible demo of a structured newsletter-to-brief pipeline."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Lena Schaefer" }]
+dependencies = []
+
+[project.optional-dependencies]
+live = ["openai>=2.50.0,<3"]
+
+[project.scripts]
+newsletter-brief = "newsletter_brief.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Berlena/newsletter-brief"
+Demo = "https://berlena.github.io/newsletter-brief/"
+
+[tool.setuptools.packages.find]
+include = ["newsletter_brief*"]

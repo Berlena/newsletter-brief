@@ -1,0 +1,62 @@
+{
+  "synthetic": true,
+  "edition_date": "2026-07-28",
+  "items": [
+    {
+      "id": "sf-001",
+      "publication": "Signal & Form (fictional)",
+      "topic": "AI and work",
+      "title": "The benchmark came before the bot",
+      "excerpt": "At fictional company Morrow & Finch, a support team mapped five handoffs and assembled 120 fabricated tickets before testing an assistant. The pilot kept human approval for refunds and account changes. Its first useful result was not automation: the test exposed three conflicting escalation rules that managers then simplified.",
+      "source_url": "https://signal-and-form.example/benchmark-before-bot"
+    },
+    {
+      "id": "ww-014",
+      "publication": "Workbench Weekly (fictional)",
+      "topic": "AI and work",
+      "title": "Quiet launches start with the handoff",
+      "excerpt": "Three invented teams described their smallest successful AI pilots. Each documented the current handoff, named a human owner for exceptions and decided what evidence would stop the experiment. None began by selecting a model.",
+      "source_url": "https://workbench-weekly.example/quiet-launches"
+    },
+    {
+      "id": "ct-203",
+      "publication": "Common Thread Dispatch (fictional)",
+      "topic": "Operations",
+      "title": "A decision log replaced two status calls",
+      "excerpt": "A fictional 16-person design studio ran a four-week trial: Tuesday and Thursday status calls became a shared decision log with an owner and review date. Reported meeting time moved from five hours to three hours per person each week, while unresolved decisions became easier to spot.",
+      "source_url": "https://common-thread.example/decision-log-trial"
+    },
+    {
+      "id": "fm-077",
+      "publication": "Field Manual (fictional)",
+      "topic": "Operations",
+      "title": "Three questions make experiments easier to stop",
+      "excerpt": "A one-page experiment memo at invented company Apricot Works asks: what are we testing, what would count as evidence and when will we decide? The team archives the answer with the decision so a temporary workaround does not quietly become permanent policy.",
+      "source_url": "https://field-manual.example/three-question-memo"
+    },
+    {
+      "id": "ll-042",
+      "publication": "Ledgerline Lab Notes (fictional)",
+      "topic": "Finance operations",
+      "title": "An invoice pilot started with mismatch categories",
+      "excerpt": "Using 60 entirely fabricated invoices, a finance team defined four mismatch categories before trying extraction software. The trial surfaced eight review cases, all of which stayed with a person. The categories made vendor comparisons more useful than a single accuracy score.",
+      "source_url": "https://ledgerline-lab.example/invoice-mismatch-categories"
+    },
+    {
+      "id": "co-118",
+      "publication": "Circular Office (fictional)",
+      "topic": "Responsible technology",
+      "title": "Repairability entered the hardware shortlist",
+      "excerpt": "A fictional co-working group added spare-part availability, battery replacement and five-year software support to its laptop scorecard. Purchase price still mattered, but the team could compare the likely operating life of the shortlisted devices instead of treating all hardware as equally disposable.",
+      "source_url": "https://circular-office.example/repairability-scorecard"
+    },
+    {
+      "id": "llg-009",
+      "publication": "The Long Ledger (fictional)",
+      "topic": "Read longer",
+      "title": "Organizational memory needs a review date",
+      "excerpt": "A fictional essay argues that useful internal memory is smaller than a wiki and more durable than chat. Its proposed note has four fields: context, decision, owner and review date. The review date is the important one because it makes an old decision visibly revisable.",
+      "source_url": "https://long-ledger.example/memory-with-review-dates"
+    }
+  ]
+}
