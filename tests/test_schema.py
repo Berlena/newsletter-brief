@@ -17,7 +17,7 @@ class SchemaTests(unittest.TestCase):
     def test_committed_response_is_valid(self) -> None:
         brief = load_brief(ROOT / "demo" / "prepared_response.json")
         self.assertTrue(brief.synthetic)
-        self.assertEqual("The Morning Edit", brief.title)
+        self.assertEqual("Your Morning Brief", brief.title)
 
     def test_missing_required_field_is_rejected(self) -> None:
         raw = copy.deepcopy(self.raw)

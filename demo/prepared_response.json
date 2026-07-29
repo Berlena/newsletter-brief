@@ -1,6 +1,6 @@
 {
   "synthetic": true,
-  "title": "The Morning Edit",
+  "title": "Your Morning Brief",
   "edition": "Tuesday brief",
   "date": "2026-07-28",
   "read_time_minutes": 4,
@@ -9,7 +9,8 @@
     "Workflow maps came before model selection",
     "Two status calls became one decision log",
     "Invoice tests began with mismatch categories",
-    "Repairability joined a fictional buying scorecard"
+    "Repairability joined a fictional buying scorecard",
+    "A review date made old decisions visibly revisable"
   ],
   "lead_story": {
     "title": "The best AI pilots started with the work, not the model",

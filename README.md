@@ -6,7 +6,11 @@
 [Live synthetic demo](https://berlena.github.io/newsletter-brief/) ·
 [Publication boundary](PUBLICATION_BOUNDARY.md)
 
-![A synthetic Newsletter Brief edition rendered as a responsive editorial page](docs/screenshot.png)
+![A production-faithful synthetic Newsletter Brief edition with indigo section rules, an editorial serif and a five-item retention card](docs/screenshot.png)
+
+The words and sources in the screenshot are fictional. The presentation mirrors
+the private email: a compact editorial column, five things to remember, one big
+story, indigo section rules, and expandable headlines for skim-first reading.
 
 I subscribed to useful newsletters faster than I could read them. The result was
 an inbox full of good material and no reliable way to turn it into a view of the

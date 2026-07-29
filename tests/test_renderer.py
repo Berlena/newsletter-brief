@@ -61,22 +61,31 @@ class RendererTests(unittest.TestCase):
 
     def test_output_has_responsive_and_accessible_landmarks(self) -> None:
         rendered = render_html(self.brief)
-        self.assertIn("@media (max-width: 760px)", rendered)
+        self.assertIn("@media (max-width: 680px)", rendered)
         self.assertIn('class="skip-link"', rendered)
         self.assertIn('aria-label="Demo architecture"', rendered)
         self.assertIn("Synthetic demo", rendered)
 
-    def test_lead_palette_meets_wcag_aa(self) -> None:
-        background = css_color("lead-bg")
-        for foreground in ("lead-ink", "lead-secondary", "lead-hover"):
+    def test_editorial_palette_meets_wcag_aa(self) -> None:
+        paper = css_color("paper")
+        for foreground in ("ink", "muted", "accent", "accent-dark"):
             with self.subTest(foreground=foreground):
                 self.assertGreaterEqual(
-                    contrast_ratio(background, css_color(foreground)),
+                    contrast_ratio(paper, css_color(foreground)),
                     4.5,
                 )
-        self.assertIn(".lead a:hover", _CSS)
-        self.assertIn(".lead a:focus-visible", _CSS)
-        self.assertLess(_CSS.index(".lead .source"), _CSS.index(".lead a:hover"))
+        self.assertGreaterEqual(
+            contrast_ratio(css_color("remember-bg"), css_color("accent-dark")),
+            4.5,
+        )
+        self.assertIn(".story-card summary:hover", _CSS)
+
+    def test_output_matches_the_private_briefs_editorial_structure(self) -> None:
+        rendered = render_html(self.brief)
+        self.assertIn("5 things to remember today", rendered)
+        self.assertIn("The Big Story", rendered)
+        self.assertIn('<details class="story-card">', rendered)
+        self.assertIn("Today’s through-line", rendered)
 
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ class SynthesisTests(unittest.TestCase):
             client=client,
         )
 
-        self.assertEqual("The Morning Edit", brief.title)
+        self.assertEqual("Your Morning Brief", brief.title)
         self.assertEqual("mock-model", responses.request["model"])
         self.assertFalse(responses.request["store"])
         response_format = responses.request["text"]["format"]

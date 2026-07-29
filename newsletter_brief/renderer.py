@@ -9,113 +9,98 @@ from newsletter_brief.models import Brief, Section, Story
 _CSS = """
 :root {
   color-scheme: light;
-  --paper: #f4f0e7;
-  --sheet: #fffdf8;
-  --ink: #20201d;
-  --muted: #6b6860;
-  --line: #d8d1c3;
-  --signal: #d9653b;
-  --signal-dark: #8d3821;
-  --lead-bg: #d9653b;
-  --lead-ink: #18110e;
-  --lead-secondary: #2a1a14;
-  --lead-hover: #000000;
-  --wash: #ede5d8;
-  --sage: #dfe5d7;
+  --canvas: #f3f4f6;
+  --paper: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --card: #f9fafb;
+  --accent: #4f46e5;
+  --accent-dark: #3730a3;
+  --remember-bg: #eef2ff;
+  --quote-line: #c7d2fe;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.55;
+  font-family: Charter, "Charter BT", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
 }
-a { color: inherit; text-underline-offset: 0.18em; }
-a:hover { color: var(--signal-dark); }
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+a:hover { color: var(--accent-dark); }
+a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--quote-line);
+  outline-offset: 3px;
+}
 .skip-link {
-  position: absolute;
+  position: fixed;
   left: 1rem;
   top: -4rem;
-  z-index: 2;
+  z-index: 3;
   background: var(--ink);
-  color: white;
+  color: var(--paper);
   padding: 0.65rem 0.9rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .skip-link:focus { top: 1rem; }
-.demo-bar {
-  background: var(--ink);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.13em;
-  padding: 0.7rem 1rem;
-  text-align: center;
-  text-transform: uppercase;
-}
 .page {
-  width: min(1120px, calc(100% - 2rem));
-  margin: 1.4rem auto 3rem;
-  background: var(--sheet);
-  border: 1px solid var(--line);
-  box-shadow: 0 24px 70px rgba(53, 45, 31, 0.09);
+  width: min(640px, calc(100% - 2rem));
+  min-height: 100vh;
+  margin: 1.5rem auto 3rem;
+  padding: 2rem 1.5rem 2.5rem;
+  background: var(--paper);
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+}
+.demo-note {
+  margin: 0 0 1.6rem;
+  padding: 0 0 0.7rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.demo-note strong {
+  color: var(--accent-dark);
+  font-weight: 700;
 }
 .masthead {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1.5rem;
-  align-items: end;
-  padding: 2rem clamp(1.25rem, 4vw, 3.5rem) 1.5rem;
-  border-bottom: 1px solid var(--line);
-}
-.eyebrow, .section-label, .story-label {
-  margin: 0 0 0.45rem;
-  color: var(--signal-dark);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  margin-bottom: 1.2rem;
 }
 .masthead h1 {
-  margin: 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(2.7rem, 7vw, 5.8rem);
-  font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 0.9;
+  margin: 0 0 0.15rem;
+  font-size: clamp(1.8rem, 7vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 .issue-meta {
   margin: 0;
   color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.73rem;
-  line-height: 1.7;
-  text-align: right;
-  text-transform: uppercase;
-}
-.opening {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(250px, 0.75fr);
-  gap: clamp(1.5rem, 5vw, 4rem);
-  padding: clamp(2rem, 5vw, 4.2rem) clamp(1.25rem, 4vw, 3.5rem);
-}
-.opening-note {
-  margin: 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.65rem, 3.5vw, 2.8rem);
-  letter-spacing: -0.025em;
-  line-height: 1.16;
+  font-size: 0.86rem;
 }
 .at-a-glance {
-  align-self: start;
-  padding: 1.2rem 1.25rem;
-  background: var(--wash);
+  margin: 0 0 1.7rem;
+  padding: 1rem 1.1rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 .at-a-glance h2 {
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 0.75rem;
-  letter-spacing: 0.13em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .at-a-glance ol {
@@ -126,166 +111,161 @@ a:hover { color: var(--signal-dark); }
 }
 .at-a-glance li {
   display: grid;
-  grid-template-columns: 1.8rem 1fr;
-  gap: 0.35rem;
-  padding: 0.65rem 0;
-  border-top: 1px solid rgba(32, 32, 29, 0.16);
-  font-size: 0.88rem;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.2rem;
+  margin: 0 0 0.48rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
 }
 .at-a-glance li::before {
   counter-increment: item;
-  content: "0" counter(item);
-  color: var(--signal-dark);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.68rem;
-  padding-top: 0.15rem;
+  content: counter(item) ".";
+  color: var(--accent);
+  font-weight: 700;
 }
-.lead-wrap {
-  padding: 0 clamp(1.25rem, 4vw, 3.5rem) clamp(2rem, 5vw, 4rem);
+.section-heading {
+  margin: 0;
+  padding: 0 0 0.35rem;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .lead {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
-  gap: clamp(2rem, 4vw, 3.5rem);
-  padding: clamp(1.5rem, 4vw, 3rem);
-  background: var(--lead-bg);
-  color: var(--lead-ink);
+  padding: 0.9rem 0 0.2rem;
 }
-.lead .story-label { color: var(--lead-ink); }
-.lead h2 {
-  max-width: 13ch;
-  margin: 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(2.25rem, 3.7vw, 3.45rem);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 1;
-  text-wrap: balance;
+.lead h3 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.45rem, 5.7vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
 }
-.lead-copy p { margin: 0 0 1rem; }
+.lead-summary {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
 .why {
-  padding-top: 1rem;
-  border-top: 1px solid rgba(32, 32, 29, 0.28);
+  margin: 0 0 0.7rem;
+  color: var(--muted);
+  font-size: 0.93rem;
 }
-.why strong, .key-fact strong { font-size: 0.78rem; text-transform: uppercase; }
+.why strong {
+  color: var(--accent);
+  font-weight: 600;
+}
 .key-fact {
   display: inline-block;
-  margin: 0.25rem 0 1.1rem;
-  padding: 0.55rem 0.7rem;
-  background: rgba(255, 253, 248, 0.52);
+  margin: 0.05rem 0 0.75rem;
+  padding: 0.42rem 0.7rem;
+  border-radius: 8px;
+  background: var(--remember-bg);
+  color: var(--accent-dark);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.thread {
+  margin: 0.15rem 0 0.75rem;
+  padding: 0.35rem 0 0.35rem 0.85rem;
+  /* Intentional: this matches the private email's quoted talk-track treatment. */
+  border-left: 3px solid var(--quote-line);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+.thread span {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .source {
-  margin: 0;
+  margin: 0.1rem 0 0;
   color: var(--muted);
   font-size: 0.76rem;
 }
-.lead .source,
-.lead .source a { color: var(--lead-secondary); }
-.lead a:hover,
-.lead a:focus-visible { color: var(--lead-hover); }
-.lead a:focus-visible {
-  outline: 3px solid var(--lead-hover);
-  outline-offset: 3px;
-}
 .sections {
-  padding: 0 clamp(1.25rem, 4vw, 3.5rem) 3rem;
+  margin-top: 0.3rem;
 }
 .section {
-  padding: 2.2rem 0 2.5rem;
-  border-top: 1px solid var(--ink);
+  margin-top: 1.6rem;
 }
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--accent);
 }
 .section-header h2 {
   margin: 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.7rem, 3vw, 2.5rem);
-  font-weight: 500;
-  letter-spacing: -0.025em;
-}
-.section-count {
-  color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.7rem;
+  padding-bottom: 0.35rem;
+  color: var(--accent);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.story-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-}
 .story-card {
-  min-width: 0;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  background: var(--sheet);
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
 }
-.story-card:nth-child(3n) { background: var(--sage); }
-.story-card h3 {
-  margin: 0 0 0.85rem;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+.story-card summary {
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1.03rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
-.story-card p { margin: 0 0 0.85rem; }
-.story-card .why {
-  margin-top: 1rem;
-  color: #4b4943;
+.story-card summary:hover { color: var(--accent-dark); }
+.story-body {
+  padding: 0.55rem 0 0 1.05rem;
 }
-.story-card .key-fact { background: var(--wash); }
+.story-body > p:first-child {
+  margin: 0 0 0.35rem;
+  font-size: 0.94rem;
+}
 .footer {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2rem;
-  padding: 2rem clamp(1.25rem, 4vw, 3.5rem);
-  background: var(--ink);
-  color: #f9f5ec;
+  margin-top: 1.8rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
 }
 .footer p { margin: 0; }
 .pipeline {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-top: 0.8rem;
+  margin: 0.65rem 0;
 }
 .pipeline span {
-  padding: 0.35rem 0.55rem;
-  border: 1px solid #77736b;
+  padding: 0.25rem 0.48rem;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  color: #d9d3c8;
-  font-family: "SFMono-Regular", Consolas, monospace;
+  color: var(--muted);
   font-size: 0.65rem;
 }
 .footer-note {
-  max-width: 25rem;
-  color: #c4beb3;
-  font-size: 0.76rem;
-  text-align: right;
+  line-height: 1.5;
 }
-@media (max-width: 900px) {
-  .lead {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+@media (max-width: 680px) {
+  body { background: var(--paper); }
+  .page {
+    width: 100%;
+    margin: 0;
+    padding: 1.35rem 1.1rem 2rem;
+    box-shadow: none;
   }
-  .lead h2 { max-width: 18ch; }
-}
-@media (max-width: 760px) {
-  .page { width: min(100% - 1rem, 1120px); margin-top: 0.5rem; }
-  .masthead, .opening, .footer { grid-template-columns: 1fr; }
-  .issue-meta, .footer-note { text-align: left; }
-  .opening { gap: 1.5rem; }
-  .story-grid { grid-template-columns: 1fr; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  .demo-note { margin-bottom: 1.3rem; }
+  .at-a-glance { padding-inline: 1rem; }
 }
 """
 
@@ -294,35 +274,32 @@ def _source(story: Story) -> str:
     url = escape(story.source_url, quote=True)
     label = escape(story.source_label)
     return (
-        f'<p class="source">Source · <a href="{url}" rel="noopener noreferrer">'
-        f"{label}</a></p>"
+        f'<p class="source">→ <a href="{url}" rel="noopener noreferrer">{label}</a></p>'
     )
 
 
 def _story_card(story: Story) -> str:
     return (
-        '<article class="story-card">'
-        '<p class="story-label">Briefed</p>'
-        f"<h3>{escape(story.title)}</h3>"
+        '<details class="story-card">'
+        f"<summary>{escape(story.title)}</summary>"
+        '<div class="story-body">'
         f"<p>{escape(story.summary)}</p>"
-        f'<p class="why"><strong>Why it matters</strong><br>{escape(story.why_it_matters)}</p>'
-        f'<p class="key-fact"><strong>Keep</strong> · {escape(story.key_fact)}</p>'
+        f'<p class="why"><strong>Why·</strong> {escape(story.why_it_matters)}</p>'
+        f'<p class="key-fact">Remember · {escape(story.key_fact)}</p>'
         f"{_source(story)}"
-        "</article>"
+        "</div>"
+        "</details>"
     )
 
 
 def _section(section: Section, index: int) -> str:
-    count = len(section.stories)
-    label = "story" if count == 1 else "stories"
     cards = "".join(_story_card(story) for story in section.stories)
     return (
         f'<section class="section" aria-labelledby="section-{index}">'
         '<div class="section-header">'
         f'<h2 id="section-{index}">{escape(section.name)}</h2>'
-        f'<span class="section-count">{count:02d} {label}</span>'
         "</div>"
-        f'<div class="story-grid">{cards}</div>'
+        f"{cards}"
         "</section>"
     )
 
@@ -331,7 +308,7 @@ def render_html(brief: Brief) -> str:
     """Return byte-for-byte stable HTML for the same validated brief."""
 
     date_label = (
-        f"{brief.edition_date:%A}, {brief.edition_date.day} {brief.edition_date:%B %Y}"
+        f"{brief.edition_date:%a, %b} {brief.edition_date.day}, {brief.edition_date:%Y}"
     )
     top_lines = "".join(f"<li>{escape(line)}</li>" for line in brief.top_lines)
     sections = "".join(
@@ -352,50 +329,38 @@ def render_html(brief: Brief) -> str:
         "</head>\n"
         "<body>\n"
         '  <a class="skip-link" href="#brief">Skip to brief</a>\n'
-        '  <div class="demo-bar">Synthetic demo · no real newsletters or personal data</div>\n'
         '  <main class="page" id="brief">\n'
+        '    <p class="demo-note"><strong>Public demo</strong> · Synthetic inputs and fictional sources; '
+        "no inbox data or real newsletter content.</p>\n"
         '    <header class="masthead">\n'
-        "      <div>\n"
-        '        <p class="eyebrow">Newsletter brief / public demo</p>\n'
-        f"        <h1>{escape(brief.title)}</h1>\n"
-        "      </div>\n"
+        f"      <h1>{escape(brief.title)}</h1>\n"
         '      <p class="issue-meta">'
-        f"{escape(brief.edition)}<br>{escape(date_label)}<br>"
-        f"{brief.read_time_minutes} minute read</p>\n"
+        f"{escape(date_label)} &nbsp;·&nbsp; "
+        f"{brief.read_time_minutes} min essentials</p>\n"
         "    </header>\n"
-        '    <section class="opening" aria-labelledby="opening-title">\n'
-        "      <div>\n"
-        '        <p class="section-label" id="opening-title">The through-line</p>\n'
-        f'        <p class="opening-note">{escape(brief.opening_note)}</p>\n'
-        "      </div>\n"
-        '      <aside class="at-a-glance" aria-labelledby="glance-title">\n'
-        '        <h2 id="glance-title">At a glance</h2>\n'
-        f"        <ol>{top_lines}</ol>\n"
-        "      </aside>\n"
-        "    </section>\n"
-        '    <div class="lead-wrap">\n'
+        '    <aside class="at-a-glance" aria-labelledby="glance-title">\n'
+        f'      <h2 id="glance-title">{len(brief.top_lines)} things to remember today</h2>\n'
+        f"      <ol>{top_lines}</ol>\n"
+        "    </aside>\n"
+        '    <section aria-labelledby="lead-section">\n'
+        '      <h2 class="section-heading" id="lead-section">The Big Story</h2>\n'
         '      <article class="lead">\n'
-        "        <div>\n"
-        '          <p class="story-label">Lead story</p>\n'
-        f"          <h2>{escape(lead.title)}</h2>\n"
-        "        </div>\n"
-        '        <div class="lead-copy">\n'
-        f"          <p>{escape(lead.summary)}</p>\n"
-        f'          <p class="why"><strong>Why it matters</strong><br>{escape(lead.why_it_matters)}</p>\n'
-        f'          <p class="key-fact"><strong>Keep</strong> · {escape(lead.key_fact)}</p>\n'
-        f"          {_source(lead)}\n"
-        "        </div>\n"
+        f"        <h3>{escape(lead.title)}</h3>\n"
+        f'        <p class="lead-summary">{escape(lead.summary)}</p>\n'
+        f'        <p class="why"><strong>Why·</strong> {escape(lead.why_it_matters)}</p>\n'
+        f'        <p class="key-fact">Remember · {escape(lead.key_fact)}</p>\n'
+        '        <blockquote class="thread"><span>Today’s through-line</span>'
+        f"“{escape(brief.opening_note)}”</blockquote>\n"
+        f"        {_source(lead)}\n"
         "      </article>\n"
-        "    </div>\n"
+        "    </section>\n"
         f'    <div class="sections">{sections}</div>\n'
         '    <footer class="footer">\n'
-        "      <div>\n"
-        "        <p><strong>How this page was made</strong></p>\n"
+        f"      <p><strong>{escape(brief.edition)}</strong> · How this public demo was made</p>\n"
         '        <div class="pipeline" aria-label="Demo architecture">\n'
         "          <span>synthetic inputs</span><span>structured synthesis</span>"
         "<span>schema validation</span><span>deterministic HTML</span>\n"
         "        </div>\n"
-        "      </div>\n"
         '      <p class="footer-note">Every name, publication, excerpt and claim in this edition is fictional. '
         "The public repository contains no inbox connection or production personalization logic.</p>\n"
         "    </footer>\n"
