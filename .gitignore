@@ -7,3 +7,10 @@ __pycache__/
 .coverage
 htmlcov/
 dist/
+
+# Personal runs. Never commit a mailbox, a config with your address, or a brief.
+config.toml
+output/
+*.eml
+eml/
+inbox/

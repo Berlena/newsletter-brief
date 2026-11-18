@@ -1,0 +1,67 @@
+# Copy this file to config.toml and edit it.
+# config.toml is not committed.
+#
+# Do not put a password or an API key in this file.
+# The mailbox app password belongs in NEWSLETTER_BRIEF_MAILBOX_PASSWORD
+# or in the OS keychain (service "newsletter-brief", account "mailbox").
+# The model key belongs in LLM_API_KEY or the keychain account "llm".
+# The model name belongs in LLM_MODEL. A local model can omit the key.
+
+title = "Your Morning Brief"
+
+[llm]
+# Optional. LLM_BASE_URL and LLM_MODEL override these.
+# Default base URL, if you set neither, is https://api.openai.com/v1
+# Other examples are in the README. Do not put LLM_API_KEY here.
+base_url = "https://api.openai.com/v1"
+
+[mailbox]
+# Gmail: imap.gmail.com
+# Outlook: outlook.office365.com
+# iCloud: imap.mail.me.com
+# Fastmail: imap.fastmail.com
+host = "imap.gmail.com"
+port = 993
+user = "you@example.com"
+folder = "INBOX"
+# How far back to read. 24 is one day. 72 covers a weekend. Maximum 168.
+hours = 24
+
+[senders]
+# Only these senders are read. A domain matches that domain and its subdomains.
+# A full address matches only that address. Other mail is not opened.
+allow = [
+  "harbor-daily.example",
+  "editor@canopy-notes.example",
+]
+
+[interests]
+# Optional. Used only to steer the "why this matters" box. Not treated as facts.
+topics = [
+  "city services",
+  "climate",
+]
+
+[figures]
+# Fetched by code from free sources. The summary is not allowed to fill these in.
+# eur-xxx uses the ECB euro reference rates (xxx is the other currency, such as usd).
+# btc-usd and eth-usd use CoinGecko. Anything else is rejected.
+show = ["eur-usd", "eur-gbp", "btc-usd", "eth-usd"]
+
+[output]
+# Relative paths are resolved from this file's folder, not from wherever the
+# command happens to be started.
+path = "output/brief.html"
+
+[delivery]
+# Optional. When enabled, the finished page is emailed to "to" using the same
+# mailbox login and the same app password.
+enabled = false
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+to = "you@example.com"
+
+[limits]
+max_messages = 30
+max_chars_per_message = 20000
+max_total_chars = 60000

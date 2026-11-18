@@ -7,6 +7,8 @@ name = "newsletter-brief"
 version = "0.1.0"
 description = "A source-visible demo of a structured newsletter-to-brief pipeline."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [{ name = "Lena Schaefer" }]
 dependencies = []

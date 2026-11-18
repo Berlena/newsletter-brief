@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from newsletter_brief.models import Brief, Section, Story
+from newsletter_brief.models import Brief, Event, Section, Story
 
 
 class SchemaError(ValueError):
@@ -152,6 +152,7 @@ def parse_brief(value: Any) -> Brief:
         top_lines=top_lines,
         lead_story=_story(obj["lead_story"], "brief.lead_story"),
         sections=tuple(sections),
+        public_demo=True,
     )
 
 
@@ -219,4 +220,153 @@ BRIEF_JSON_SCHEMA: dict[str, Any] = {
         },
     },
     "required": sorted(_BRIEF_KEYS),
+}
+
+
+_EVENT_KEYS = {"title", "when", "detail", "source_label", "source_url"}
+_EDITION_KEYS = {
+    "title",
+    "edition",
+    "date",
+    "read_time_minutes",
+    "opening_note",
+    "why_this_matters",
+    "top_lines",
+    "lead_story",
+    "sections",
+    "events",
+}
+
+
+def _event(value: Any, path: str) -> Event:
+    obj = _object(value, path, _EVENT_KEYS)
+    return Event(
+        title=_text(obj["title"], f"{path}.title", maximum=140),
+        when=_text(obj["when"], f"{path}.when", maximum=80),
+        detail=_text(obj["detail"], f"{path}.detail", maximum=300),
+        source_label=_text(obj["source_label"], f"{path}.source_label", maximum=140),
+        source_url=_https_url(obj["source_url"], f"{path}.source_url"),
+    )
+
+
+def parse_edition(value: Any) -> Brief:
+    """Validate a personal-inbox brief. This path is not the synthetic demo."""
+
+    obj = _object(value, "brief", _EDITION_KEYS)
+    raw_date = _text(obj["date"], "brief.date", maximum=10)
+    try:
+        edition_date = date.fromisoformat(raw_date)
+    except ValueError as exc:
+        raise SchemaError("brief.date must use YYYY-MM-DD") from exc
+
+    read_time = obj["read_time_minutes"]
+    if isinstance(read_time, bool) or not isinstance(read_time, int):
+        raise SchemaError("brief.read_time_minutes must be an integer")
+    if not 1 <= read_time <= 30:
+        raise SchemaError("brief.read_time_minutes must be between 1 and 30")
+
+    raw_top_lines = obj["top_lines"]
+    if not isinstance(raw_top_lines, list):
+        raise SchemaError("brief.top_lines must be an array")
+    if not 1 <= len(raw_top_lines) <= 8:
+        raise SchemaError("brief.top_lines must contain 1 to 8 items")
+    top_lines = tuple(
+        _text(line, f"brief.top_lines[{index}]", maximum=120)
+        for index, line in enumerate(raw_top_lines)
+    )
+
+    raw_sections = obj["sections"]
+    if not isinstance(raw_sections, list):
+        raise SchemaError("brief.sections must be an array")
+    if not 1 <= len(raw_sections) <= 6:
+        raise SchemaError("brief.sections must contain 1 to 6 sections")
+
+    sections: list[Section] = []
+    section_names: set[str] = set()
+    for section_index, raw_section in enumerate(raw_sections):
+        section_path = f"brief.sections[{section_index}]"
+        section_obj = _object(raw_section, section_path, _SECTION_KEYS)
+        name = _text(section_obj["name"], f"{section_path}.name", maximum=70)
+        normalized_name = name.casefold()
+        if normalized_name in section_names:
+            raise SchemaError(f"{section_path}.name must be unique")
+        section_names.add(normalized_name)
+        raw_stories = section_obj["stories"]
+        if not isinstance(raw_stories, list):
+            raise SchemaError(f"{section_path}.stories must be an array")
+        if not 1 <= len(raw_stories) <= 3:
+            raise SchemaError(f"{section_path}.stories must contain 1 to 3 stories")
+        stories = tuple(
+            _story(story, f"{section_path}.stories[{story_index}]")
+            for story_index, story in enumerate(raw_stories)
+        )
+        sections.append(Section(name=name, stories=stories))
+
+    raw_events = obj["events"]
+    if not isinstance(raw_events, list):
+        raise SchemaError("brief.events must be an array")
+    if len(raw_events) > 8:
+        raise SchemaError("brief.events must contain at most 8 events")
+    events = tuple(
+        _event(event, f"brief.events[{index}]") for index, event in enumerate(raw_events)
+    )
+
+    return Brief(
+        synthetic=False,
+        title=_text(obj["title"], "brief.title", maximum=80),
+        edition=_text(obj["edition"], "brief.edition", maximum=80),
+        edition_date=edition_date,
+        read_time_minutes=read_time,
+        opening_note=_text(obj["opening_note"], "brief.opening_note", maximum=360),
+        why_this_matters=_text(
+            obj["why_this_matters"], "brief.why_this_matters", maximum=400
+        ),
+        top_lines=top_lines,
+        lead_story=_story(obj["lead_story"], "brief.lead_story"),
+        sections=tuple(sections),
+        events=events,
+        public_demo=False,
+    )
+
+
+_EVENT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "title": {"type": "string", "maxLength": 140},
+        "when": {"type": "string", "maxLength": 80},
+        "detail": {"type": "string", "maxLength": 300},
+        "source_label": {"type": "string", "maxLength": 140},
+        "source_url": {"type": "string", "maxLength": 500},
+    },
+    "required": sorted(_EVENT_KEYS),
+}
+
+# Personal runs. There is no figures field: numbers in that box come from code.
+EDITION_JSON_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "title": {"type": "string", "maxLength": 80},
+        "edition": {"type": "string", "maxLength": 80},
+        "date": {"type": "string", "maxLength": 10},
+        "read_time_minutes": {"type": "integer", "minimum": 1, "maximum": 30},
+        "opening_note": {"type": "string", "maxLength": 360},
+        "why_this_matters": {"type": "string", "maxLength": 400},
+        "top_lines": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {"type": "string", "maxLength": 120},
+        },
+        "lead_story": _STORY_SCHEMA,
+        "sections": BRIEF_JSON_SCHEMA["properties"]["sections"],
+        "events": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 8,
+            "items": _EVENT_SCHEMA,
+        },
+    },
+    "required": sorted(_EDITION_KEYS),
 }

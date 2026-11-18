@@ -40,6 +40,28 @@ class Section:
 
 
 @dataclass(frozen=True, slots=True)
+class Event:
+    title: str
+    when: str
+    detail: str
+    source_label: str
+    source_url: str
+
+
+@dataclass(frozen=True, slots=True)
+class Figure:
+    """A market figure taken from a data fetch. The model does not fill this in."""
+
+    figure_id: str
+    label: str
+    value: str
+    source_name: str
+    source_url: str
+    as_of: str
+    available: bool
+
+
+@dataclass(frozen=True, slots=True)
 class Brief:
     synthetic: bool
     title: str
@@ -50,3 +72,8 @@ class Brief:
     top_lines: tuple[str, ...]
     lead_story: Story
     sections: tuple[Section, ...]
+    why_this_matters: str = ""
+    events: tuple[Event, ...] = ()
+    figures: tuple[Figure, ...] = ()
+    public_demo: bool = True
+    input_note: str = ""

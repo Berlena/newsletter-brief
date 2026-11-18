@@ -20,7 +20,31 @@ SECRET_PATTERNS = {
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     "private key block": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
 }
-ALLOWED_PUBLIC_HOSTS = {"github.com", "berlena.github.io"}
+# Vendor setup pages and the keyless market-data sources. Newsletter content
+# still has to use a .example host. Anything else fails the audit.
+ALLOWED_PUBLIC_HOSTS = {
+    "github.com",
+    "berlena.github.io",
+    "support.google.com",
+    "support.apple.com",
+    "support.microsoft.com",
+    "www.fastmail.help",
+    "www.ecb.europa.eu",
+    "api.coingecko.com",
+    "www.coingecko.com",
+    "api.openai.com",
+    "developers.openai.com",
+    "api.mistral.ai",
+    "docs.mistral.ai",
+    "docs.ollama.com",
+    "lmstudio.ai",
+}
+_EXAMPLE_EMAIL_DOMAINS = {"example", "example.com", "example.org", "example.net"}
+
+
+def _email_allowed(address: str) -> bool:
+    domain = address.rsplit("@", 1)[-1].casefold().rstrip(".")
+    return domain in _EXAMPLE_EMAIL_DOMAINS or domain.endswith(".example")
 
 
 def _tracked_paths() -> set[str]:
@@ -59,9 +83,16 @@ def audit() -> list[str]:
     for path in sorted(expected - tracked):
         errors.append(f"whitelisted path is not tracked: {path}")
 
+    license_file = ROOT / "LICENSE"
+    if "LICENSE" not in tracked or not license_file.read_text(
+        encoding="utf-8"
+    ).startswith("MIT License"):
+        errors.append("LICENSE must be tracked and contain the MIT license")
+
     for path in sorted(tracked):
-        if Path(path).name.casefold().startswith("license"):
-            errors.append(f"license file is explicitly excluded: {path}")
+        name = Path(path).name.casefold()
+        if name.startswith("license") and path != "LICENSE":
+            errors.append(f"unexpected license file: {path}")
 
         data = (ROOT / path).read_bytes()
         if b"\0" in data:
@@ -73,7 +104,8 @@ def audit() -> list[str]:
             continue
 
         for match in EMAIL_PATTERN.finditer(text):
-            errors.append(f"email address found in {path}: {match.group(0)}")
+            if not _email_allowed(match.group(0)):
+                errors.append(f"email address found in {path}: {match.group(0)}")
         for label, pattern in SECRET_PATTERNS.items():
             if pattern.search(text):
                 errors.append(f"{label} found in {path}")
@@ -102,7 +134,7 @@ def main() -> int:
     print("Email addresses: 0")
     print("Secret-shaped values: 0")
     print("Unexpected URL hosts: 0")
-    print("License files: 0")
+    print("License: MIT (LICENSE)")
     return 0
 
 

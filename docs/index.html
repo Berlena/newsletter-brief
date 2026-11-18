@@ -255,6 +255,14 @@ summary:focus-visible {
 .footer-note {
   line-height: 1.5;
 }
+.source-check {
+  margin: 0 0 0.65rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.72rem;
+}
 @media (max-width: 680px) {
   body { background: var(--paper); }
   .page {
@@ -297,6 +305,7 @@ summary:focus-visible {
         <div class="pipeline" aria-label="Demo architecture">
           <span>synthetic inputs</span><span>structured synthesis</span><span>schema validation</span><span>deterministic HTML</span>
         </div>
+      <p class="source-check"><strong>Source check</strong> · 6 links in this edition, each one matched to an item in the inputs. A link that isn’t in the inputs stops the build.</p>
       <p class="footer-note">Every name, publication, excerpt and claim in this edition is fictional. The public repository contains no inbox connection or production personalization logic.</p>
     </footer>
   </main>
