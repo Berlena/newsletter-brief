@@ -68,6 +68,32 @@ class Figure:
 
 
 @dataclass(frozen=True, slots=True)
+class ModelNote:
+    """One optional sentence about a model. Kept only when its source was provided."""
+
+    model_id: str
+    text: str
+    source_url: str
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRelease:
+    """Facts taken from a public catalog. The summary model does not fill these in."""
+
+    model_id: str
+    name: str
+    maker: str
+    context_length: int | None
+    input_per_million: str
+    output_per_million: str
+    source_urls: tuple[str, ...] = ()
+    blurb: str = ""
+    open_weights: bool = False
+    note: str = ""
+    note_source: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class Brief:
     synthetic: bool
     title: str
@@ -83,3 +109,5 @@ class Brief:
     figures: tuple[Figure, ...] = ()
     public_demo: bool = True
     input_note: str = ""
+    model_releases: tuple[ModelRelease, ...] = ()
+    model_notes: tuple[ModelNote, ...] = ()

@@ -11,7 +11,7 @@ You can also point the same program at your own mailbox.
 [Live synthetic demo](https://berlena.github.io/newsletter-brief/) ·
 [Publication boundary](PUBLICATION_BOUNDARY.md) · MIT licensed
 
-![A synthetic Newsletter Brief edition: five things to remember, one big story and expandable headlines](docs/screenshot.png)
+![A synthetic Newsletter Brief edition: numbered facts, a big story, section pills and a markets line you can open](docs/screenshot.png)
 
 Every publication, person, excerpt and link in that screenshot is fictional.
 
@@ -185,7 +185,7 @@ The page is one HTML file. Headlines are listed, sections and events open and
 close in the browser, and it does not need a network connection after it has
 been written.
 
-![A synthetic own-inbox brief: headlines, a why-this-matters box, sample figures, and collapsed stories](docs/own-inbox-example.png)
+![A synthetic own-inbox brief: numbered facts, open story cards, a model list from fixture data, and sample figures behind a markets line](docs/own-inbox-example.png)
 
 The words in that picture are fictional. The figure values are sample numbers
 from a test, not a live quote. Bitcoin is "unavailable" on purpose.
@@ -274,11 +274,52 @@ hours = 24
 days = "weekday"
 
 [[sections]]
-name = "Longform"
+name = "Tech & SaaS"
+folder = "Newsletters/Tech"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Fintech"
 folder = "Newsletters/Fintech"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "VC & Funds"
+folder = "Newsletters/VC"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Markets & Big Tech"
+folder = "Newsletters/Markets"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Politics"
+folder = "Newsletters/Politics"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Weekend"
+folder = "Newsletters/Weekend"
+hours = 48
+days = "sat"
+
+[[sections]]
+name = "Read Longer"
+folder = "Newsletters/Read Longer"
 hours = 72
-days = ["sat", "sun"]
+days = "sun"
 ```
+
+With the days above, Monday to Friday opens the six weekday folders. Saturday
+opens Weekend. Sunday opens Read Longer. The day is the computer's local day.
+Section names can be anything. They are shown in this order, and the soft
+pill colors repeat if you add more.
 
 On a weekday the longform folder is not opened. On Saturday the AI folder is
 not opened. The day is the computer's local day.
@@ -386,6 +427,10 @@ What leaves your machine:
   setup section point at each provider's own docs.
 - Requests for the figures you asked for go to the ECB and to CoinGecko.
   Those requests do not include newsletter text.
+- If you turn on Model Mania, one request goes to the public model catalog,
+  and, if you ask for it, one request goes to the public open-weight list.
+  Those requests do not include newsletter text. A failed request leaves
+  that block out of the brief.
 - If you turn on email delivery, the finished page goes through your mail
   provider to the address you set.
 - If you turn on the GitHub Actions template, the same text also passes
@@ -437,7 +482,17 @@ mail, does not call the provider.
   and Bitcoin and Ether from CoinGecko's public API. No key. Stock indexes
   are not included. I did not find a free, keyless source for them that was
   steady enough. A failed fetch says "unavailable". The model is not asked
-  to fill the gap.
+  to fill the gap. In the email the figures stay on one line unless the
+  mail app can open the details block.
+- Model Mania is off unless `model_mania.enabled` is true. It lists models
+  added to a public catalog in the last `window_hours` (default 60), at most
+  six. Name, maker, context length and price per million tokens come from
+  that catalog. An optional open-weight list can be added with a minimum
+  like count and a maximum age. The summary may add one sentence per model,
+  and only when that sentence cites a link that was handed to it. A
+  comparison has to say who claims it. Leaderboard links are to LMArena and
+  Artificial Analysis. The block does not quote scores. A failed fetch is a
+  log warning and no block.
 - The page is one file for one person. It is not a hosted service.
 - The synthetic demo refuses anything that is not marked synthetic. A real
   run reads the mailbox at the moment you run it and does not write that

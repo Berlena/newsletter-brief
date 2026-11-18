@@ -43,6 +43,7 @@ allow = [
 # That is refused when folder is INBOX. Remove "allow" if you set mode.
 
 # Several labels, each with its own window. Omit this to keep the single folder above.
+# Names can be anything. They are shown in this order, and the pill colors repeat.
 # [[sections]]
 # name = "AI"
 # folder = "Newsletters/AI"
@@ -50,10 +51,46 @@ allow = [
 # days = "weekday"
 #
 # [[sections]]
-# name = "Longform"
+# name = "Tech & SaaS"
+# folder = "Newsletters/Tech"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "Fintech"
 # folder = "Newsletters/Fintech"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "VC & Funds"
+# folder = "Newsletters/VC"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "Markets & Big Tech"
+# folder = "Newsletters/Markets"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "Politics"
+# folder = "Newsletters/Politics"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "Weekend"
+# folder = "Newsletters/Weekend"
+# hours = 48
+# days = "sat"
+#
+# [[sections]]
+# name = "Read Longer"
+# folder = "Newsletters/Read Longer"
 # hours = 72
-# days = ["sat", "sun"]
+# days = "sun"
 
 # [feeds]
 # hours = 24
@@ -76,6 +113,16 @@ allow = [
 # lookup = false
 # max_lookups = 4
 # timeout_seconds = 8
+
+# Optional block of new models. Off by default. No key.
+# Facts come from a public catalog. A failed fetch leaves the block out.
+# [model_mania]
+# enabled = false
+# window_hours = 60
+# max_models = 6
+# huggingface = false
+# huggingface_min_likes = 100
+# huggingface_max_age_hours = 168
 
 # [edition]
 # facts = 5

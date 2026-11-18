@@ -1,0 +1,85 @@
+{
+  "data": [
+    {
+      "id": "example-lab/cedar-large",
+      "name": "Cedar Large",
+      "created": 1794996000,
+      "context_length": 128000,
+      "description": "Listed on OpenRouter last night.",
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0.000003", "completion": "0.000015"},
+      "hugging_face_id": "example-lab/cedar-large"
+    },
+    {
+      "id": "example-lab/pine-mid",
+      "name": "Pine Mid",
+      "created": 1794967200,
+      "context_length": 64000,
+      "description": "A mid-size text model.",
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0.000001", "completion": "0.000002"}
+    },
+    {
+      "id": "example-lab/birch",
+      "name": "Birch",
+      "created": 1794931200,
+      "context_length": 32000,
+      "architecture": {"modality": "text+image->text"},
+      "pricing": {"prompt": "0.0000005", "completion": "0.0000015"}
+    },
+    {
+      "id": "example-lab/alder",
+      "name": "Alder",
+      "created": 1794895200,
+      "context_length": 16000,
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0.0000002", "completion": "0.0000008"}
+    },
+    {
+      "id": "example-lab/maple",
+      "name": "Maple",
+      "created": 1794859200,
+      "context_length": 8000,
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0", "completion": "0"}
+    },
+    {
+      "id": "example-lab/ash",
+      "name": "Ash",
+      "created": 1794823200,
+      "architecture": {"modality": "text->text"},
+      "pricing": {}
+    },
+    {
+      "id": "example-lab/yew",
+      "name": "Yew",
+      "created": 1794790800,
+      "context_length": 4000,
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0.000004", "completion": "0.000004"}
+    },
+    {
+      "id": "example-lab/old-oak",
+      "name": "Old Oak",
+      "created": 1794751200,
+      "context_length": 4000,
+      "architecture": {"modality": "text->text"},
+      "pricing": {"prompt": "0.000001", "completion": "0.000001"}
+    },
+    {
+      "id": "example-lab/embed-mini",
+      "name": "Embed Mini",
+      "created": 1794996000,
+      "context_length": 8000,
+      "architecture": {"modality": "text->embedding"},
+      "pricing": {"prompt": "0.000001", "completion": "0"}
+    },
+    {
+      "id": "example-lab/pixel",
+      "name": "Pixel",
+      "created": 1794996000,
+      "architecture": {"modality": "image->image"},
+      "pricing": {"prompt": "0.000001", "completion": "0.000001"}
+    }
+  ]
+}

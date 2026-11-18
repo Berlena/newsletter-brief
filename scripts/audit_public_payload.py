@@ -39,6 +39,10 @@ ALLOWED_PUBLIC_HOSTS = {
     "docs.ollama.com",
     "lmstudio.ai",
     "en.wikipedia.org",
+    "openrouter.ai",
+    "huggingface.co",
+    "lmarena.ai",
+    "artificialanalysis.ai",
 }
 _EXAMPLE_EMAIL_DOMAINS = {"example", "example.com", "example.org", "example.net"}
 

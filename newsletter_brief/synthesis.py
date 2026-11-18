@@ -10,7 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from newsletter_brief.inputs import feed_as_dict
-from newsletter_brief.models import Brief, NewsletterFeed, Story
+from newsletter_brief.model_mania import (
+    accept_model_note,
+    catalog_for_prompt,
+    note_source_allowlist,
+)
+from newsletter_brief.models import Brief, ModelNote, ModelRelease, NewsletterFeed, Story
 from newsletter_brief.schema import (
     BRIEF_JSON_SCHEMA,
     EDITION_JSON_SCHEMA,
@@ -125,6 +130,8 @@ def _brief_urls(brief: Brief) -> set[str]:
         chunks.extend(
             [event.title, event.when, event.detail, event.source_label, event.source_url]
         )
+    for note in brief.model_notes:
+        chunks.extend([note.text, note.source_url])
     found: set[str] = set()
     for chunk in chunks:
         found |= urls_in_text(chunk)
@@ -439,6 +446,15 @@ def live_synthesis(
     return brief
 
 
+_MODEL_NOTE_INSTRUCTIONS = """
+model_notes is one optional sentence per model already listed in model_catalog.
+Copy model_id from that list. Do not invent a model, a price, a context length, or a score.
+The sentence must come from that model's description. If the description does not support a sentence, leave note and source_url empty.
+If the sentence compares models or mentions a benchmark, attribute it in the sentence, as in "North Lab says it beats Cedar on a long-context test."
+source_url must be copied from that model's allowed_sources. An empty note has an empty source_url.
+Do not mention how the list was collected."""
+
+
 def edition_as_dict(
     feed: NewsletterFeed,
     *,
@@ -447,10 +463,11 @@ def edition_as_dict(
     fact_count: int = 5,
     max_cards: int = 3,
     context_sources: Sequence[Mapping[str, str]] = (),
+    model_catalog: Sequence[ModelRelease] = (),
 ) -> dict[str, Any]:
     """Model input for a personal run. The reader's address is not included."""
 
-    return {
+    payload: dict[str, Any] = {
         "title": title,
         "edition_date": feed.edition_date.isoformat(),
         "interests": list(interests),
@@ -473,6 +490,9 @@ def edition_as_dict(
             for item in context_sources
         ],
     }
+    if model_catalog:
+        payload["model_catalog"] = catalog_for_prompt(model_catalog)
+    return payload
 
 
 def live_edition_synthesis(
@@ -488,26 +508,56 @@ def live_edition_synthesis(
     max_cards: int = 3,
     usage: Usage | None = None,
     context_sources: Sequence[Mapping[str, str]] = (),
+    model_catalog: Sequence[ModelRelease] = (),
 ) -> Brief:
     """Synthesize a personal brief. Callers may inject a fake client in tests."""
 
     if client is None:
         client = _make_client(api_key, base_url)
+    catalog = tuple(model_catalog)
+    include_notes = bool(catalog)
     schema = (
         EDITION_JSON_SCHEMA
-        if fact_count == 5 and max_cards == 3
-        else build_edition_schema(fact_count=fact_count, max_cards=max_cards)
+        if fact_count == 5 and max_cards == 3 and not include_notes
+        else build_edition_schema(
+            fact_count=fact_count,
+            max_cards=max_cards,
+            include_notes=include_notes,
+        )
     )
+    instructions = EDITION_INSTRUCTIONS
+    if include_notes:
+        instructions = EDITION_INSTRUCTIONS + _MODEL_NOTE_INSTRUCTIONS
+    allowed_notes = note_source_allowlist(catalog) if include_notes else set()
+    known_ids = {release.model_id for release in catalog}
 
     def accept(payload: Any) -> Brief:
-        return parse_edition(payload, fact_count=fact_count, max_cards=max_cards)
+        brief = parse_edition(
+            payload,
+            fact_count=fact_count,
+            max_cards=max_cards,
+            expect_notes=include_notes,
+        )
+        if not include_notes:
+            return brief
+        kept: list[ModelNote] = []
+        seen: set[str] = set()
+        for note in brief.model_notes:
+            if note.model_id not in known_ids or note.model_id in seen:
+                continue
+            cleaned = accept_model_note(note.text, note.source_url, allowed_notes)
+            if not cleaned:
+                continue
+            seen.add(note.model_id)
+            kept.append(ModelNote(note.model_id, cleaned, note.source_url))
+        return replace(brief, model_notes=tuple(kept))
 
     brief, call_usage = chat_json(
         client=client,
         model=model,
         base_url=base_url,
         api_key=api_key,
-        instructions=EDITION_INSTRUCTIONS,
+        instructions=instructions,
         user_payload=edition_as_dict(
             feed,
             title=title,
@@ -515,17 +565,16 @@ def live_edition_synthesis(
             fact_count=fact_count,
             max_cards=max_cards,
             context_sources=context_sources,
+            model_catalog=catalog,
         ),
         schema=schema,
         accept=accept,
     )
     if usage is not None:
         usage.add(call_usage)
-    ensure_grounded(
-        brief,
-        feed,
-        extra_urls={item["url"] for item in context_sources if item.get("url")},
-    )
+    extra = {item["url"] for item in context_sources if item.get("url")}
+    extra |= allowed_notes
+    ensure_grounded(brief, feed, extra_urls=extra)
     return brief
 
 

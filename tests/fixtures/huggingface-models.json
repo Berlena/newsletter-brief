@@ -1,0 +1,45 @@
+[
+  {
+    "id": "example-lab/cedar-large",
+    "likes": 800,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2026-11-17T12:00:00.000Z",
+    "gated": false
+  },
+  {
+    "id": "example-lab/spruce-open",
+    "likes": 220,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2026-11-18T00:00:00.000Z",
+    "gated": false,
+    "context_length": 8192
+  },
+  {
+    "id": "example-lab/ancient-oak",
+    "likes": 5000,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "gated": false
+  },
+  {
+    "id": "example-lab/quiet-sapling",
+    "likes": 3,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2026-11-18T00:00:00.000Z",
+    "gated": false
+  },
+  {
+    "id": "example-lab/locked-gate",
+    "likes": 900,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2026-11-18T00:00:00.000Z",
+    "gated": true
+  },
+  {
+    "id": "example-lab/embed-text",
+    "likes": 400,
+    "pipeline_tag": "text-generation",
+    "createdAt": "2026-11-18T00:00:00.000Z",
+    "gated": false
+  }
+]

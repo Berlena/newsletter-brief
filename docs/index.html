@@ -3,308 +3,429 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Your Morning Brief · Synthetic demo</title>
   <meta name="description" content="A synthetic, source-visible newsletter brief demo.">
   <style>
 :root {
-  color-scheme: light;
-  --canvas: #f3f4f6;
-  --paper: #ffffff;
-  --ink: #1a1a1a;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --card: #f9fafb;
-  --accent: #4f46e5;
-  --accent-dark: #3730a3;
-  --remember-bg: #eef2ff;
-  --quote-line: #c7d2fe;
+  color-scheme: light dark;
+  --paper: #fffcf6;
+  --ink: #32121f;
+  --muted: #6b5a60;
+  --accent: #4a1028;
+  --accent-dark: #2e0a18;
+  --remember-bg: #f4f0e6;
+  --line: #cabdb8;
+  --wine: #4a1028;
+  --lime: #d0e79b;
+  --clay: #8f513e;
+  --warm: #f4f0e6;
 }
 * { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 body {
-  margin: 0;
-  background: var(--canvas);
+  background: var(--paper);
   color: var(--ink);
-  font-family: Charter, "Charter BT", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  line-height: 1.5;
+  font-family: Inter, Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
-a {
-  color: var(--accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.16em;
+body::before {
+  content: "";
+  display: block;
+  height: 8px;
+  background: var(--lime);
 }
-a:hover { color: var(--accent-dark); }
+b, strong { font-weight: 600; }
+a {
+  color: var(--clay);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+a:hover { color: var(--wine); }
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--quote-line);
+  outline: 3px solid #7a9850;
   outline-offset: 3px;
 }
 .skip-link {
-  position: fixed;
+  position: absolute;
   left: 1rem;
   top: -4rem;
   z-index: 3;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--wine);
+  color: var(--lime);
   padding: 0.65rem 0.9rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, Helvetica, Arial, sans-serif;
 }
 .skip-link:focus { top: 1rem; }
 .page {
-  width: min(640px, calc(100% - 2rem));
-  min-height: 100vh;
-  margin: 1.5rem auto 3rem;
-  padding: 2rem 1.5rem 2.5rem;
-  background: var(--paper);
-  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+  width: min(33rem, calc(100% - 2.4rem));
+  margin: 0 auto;
+  padding: 2rem 0 4.5rem;
 }
 .demo-note {
   margin: 0 0 1.6rem;
-  padding: 0 0 0.7rem;
-  border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.72rem;
-  line-height: 1.45;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
-.demo-note strong {
-  color: var(--accent-dark);
-  font-weight: 700;
-}
-.masthead {
-  margin-bottom: 1.2rem;
+.demo-note strong { color: var(--wine); font-weight: 600; }
+.kicker {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 .masthead h1 {
-  margin: 0 0 0.15rem;
-  font-size: clamp(1.8rem, 7vw, 2.15rem);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-}
-.issue-meta {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.86rem;
+  color: var(--wine);
+  font-size: 2.2rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
 }
-.at-a-glance {
-  margin: 0 0 1.7rem;
-  padding: 1rem 1.1rem 0.8rem;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-}
-.at-a-glance h2 {
-  margin: 0 0 0.75rem;
-  color: var(--muted);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.at-a-glance ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: item;
-}
-.at-a-glance li {
-  display: grid;
-  grid-template-columns: 1.4rem 1fr;
-  gap: 0.2rem;
-  margin: 0 0 0.48rem;
-  font-size: 0.94rem;
-  line-height: 1.45;
-}
-.at-a-glance li::before {
-  counter-increment: item;
-  content: counter(item) ".";
-  color: var(--accent);
-  font-weight: 700;
-}
-.section-heading {
-  margin: 0;
-  padding: 0 0 0.35rem;
-  border-bottom: 2px solid var(--accent);
-  color: var(--accent);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.lead {
-  padding: 0.9rem 0 0.2rem;
-}
-.lead h3 {
-  margin: 0 0 0.5rem;
-  font-size: clamp(1.45rem, 5.7vw, 1.85rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.22;
-}
-.lead-summary {
-  margin: 0 0 0.35rem;
+.progress { margin: 1.2rem 0 2.4rem; }
+.progress-meta {
+  margin: 0 0 0.85rem;
   font-size: 1rem;
 }
-.why {
-  margin: 0 0 0.7rem;
-  color: var(--muted);
-  font-size: 0.93rem;
+.progress ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.why strong {
-  color: var(--accent);
+.progress a {
+  display: block;
+  padding: 0.35rem 0.4rem;
+  min-height: 36px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 0.75rem;
   font-weight: 600;
+  text-decoration: none;
+  line-height: 1.35;
 }
-.key-fact {
-  display: inline-block;
-  margin: 0.05rem 0 0.75rem;
-  padding: 0.42rem 0.7rem;
-  border-radius: 8px;
+.progress a:hover { background: var(--warm); }
+.section { margin: 0 0 2.6rem; }
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.fact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fact-list li {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr;
+  gap: 0.75rem;
+  margin: 0 0 1.05rem;
+  align-items: start;
+}
+.num {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: #d0e79b;
+  color: #4a1028;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 0.15rem;
+  font-variant-numeric: tabular-nums;
+}
+.fact-list p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.card h3, .lead h3, .model-name {
+  margin: 0 0 0.65rem;
+  color: var(--wine);
+  font-size: 1.16rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+.summary, .why, .key-fact {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.why-label, .key-label, .who-label {
+  font-weight: 600;
+  color: var(--clay);
+}
+.who-label { color: var(--wine); }
+.why-brief {
+  margin: 0 0 1.6rem;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.context {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.8rem 0.6rem;
   background: var(--remember-bg);
-  color: var(--accent-dark);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
+.context a { color: var(--clay); }
+.source { margin: 0 0 0.2rem; font-size: 0.95rem; }
 .thread {
-  margin: 0.15rem 0 0.75rem;
-  padding: 0.35rem 0 0.35rem 0.85rem;
-  /* Intentional: this matches the private email's quoted talk-track treatment. */
-  border-left: 3px solid var(--quote-line);
-  font-size: 0.9rem;
-  font-style: italic;
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
   line-height: 1.5;
 }
 .thread span {
   display: block;
   margin-bottom: 0.12rem;
   color: var(--muted);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.7rem;
-  font-style: normal;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.source {
-  margin: 0.1rem 0 0;
-  color: var(--muted);
-  font-size: 0.76rem;
+.card + .card {
+  margin-top: 1.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
 }
-.sections {
-  margin-top: 0.3rem;
-}
-.section {
-  margin-top: 1.6rem;
-}
-.section-header {
-  border-bottom: 2px solid var(--accent);
-}
-.section-header h2 {
-  margin: 0;
-  padding-bottom: 0.35rem;
-  color: var(--accent);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.story-card {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--line);
-}
-.story-card summary {
-  color: var(--ink);
+.more { margin: 0.2rem 0 0.6rem; }
+.more > summary {
   cursor: pointer;
-  font-size: 1.03rem;
-  font-weight: 700;
+  color: var(--clay);
+  font-weight: 600;
+}
+.markets-toggle > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: baseline;
+  color: var(--ink);
+  font-size: 1rem;
+}
+.markets-toggle > summary::-webkit-details-marker { display: none; }
+.markets-line { font-variant-numeric: tabular-nums; }
+.when-open { display: none; color: var(--clay); font-weight: 600; }
+.when-closed { color: var(--clay); font-weight: 600; }
+.markets-toggle[open] .when-closed { display: none; }
+.markets-toggle[open] .when-open { display: inline; }
+.markets-panel { margin-top: 0.9rem; }
+.figure-note, .markets-asof {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.figure-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.figure {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  background: var(--warm);
+  border-radius: 16px;
+}
+.figure-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.figure-value {
+  margin: 0.12rem 0;
+  color: var(--wine);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.figure-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
   line-height: 1.35;
 }
-.story-card summary:hover { color: var(--accent-dark); }
-.story-body {
-  padding: 0.55rem 0 0 1.05rem;
+.model-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.story-body > p:first-child {
-  margin: 0 0 0.35rem;
-  font-size: 0.94rem;
+.model-list li {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr;
+  gap: 0.75rem;
+  margin: 0 0 1.15rem;
 }
-.footer {
-  margin-top: 1.8rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--line);
+.model-meta {
+  margin: -0.35rem 0 0.45rem;
   color: var(--muted);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.92rem;
 }
-.footer p { margin: 0; }
+.model-boards {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.story-card {
+  margin: 0 0 0.8rem;
+}
+.story-card summary {
+  cursor: pointer;
+  color: var(--wine);
+  font-weight: 600;
+}
+.story-card summary:hover { color: var(--accent-dark); }
+.story-body { padding: 0.4rem 0 0.2rem; }
+.issue-meta { margin: 0 0 0.3rem; color: var(--muted); font-size: 0.88rem; }
+.quiet { margin: 0; color: var(--muted); }
+.ending { margin-top: 0.4rem; padding-top: 0.4rem; }
+.ending::before {
+  content: "";
+  display: block;
+  width: 2.2rem;
+  height: 8px;
+  background: var(--lime);
+  border-radius: 99px;
+  margin-bottom: 1.1rem;
+}
+.thats-it {
+  margin: 0 0 0.45rem;
+  color: var(--wine);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.ending p { margin: 0 0 0.45rem; }
+.fine, .footer-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
 .pipeline {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.65rem 0;
+  gap: 0.4rem;
+  margin: 0.7rem 0;
 }
 .pipeline span {
-  padding: 0.25rem 0.48rem;
+  padding: 0.2rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.65rem;
-}
-.footer-note {
-  line-height: 1.5;
-}
-.source-check {
-  margin: 0 0 0.65rem;
-  padding: 0.45rem 0.6rem;
-  border-left: 3px solid var(--accent);
-  background: var(--card);
-  color: var(--ink);
   font-size: 0.72rem;
 }
+.source-check {
+  margin: 0 0 0.7rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--warm);
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
 @media (max-width: 680px) {
-  body { background: var(--paper); }
-  .page {
-    width: 100%;
-    margin: 0;
-    padding: 1.35rem 1.1rem 2rem;
-    box-shadow: none;
+  body { font-size: 17px; }
+  .masthead h1 { font-size: 1.9rem; }
+  .page { width: calc(100% - 2rem); padding-top: 1.4rem; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+  --paper: #1c1016;
+  --ink: #f6efe8;
+  --muted: #e7c9d2;
+  --accent: #f3d5e0;
+  --accent-dark: #f6efe8;
+  --remember-bg: #2a1a22;
+  --line: #4a3040;
+  --wine: #f3d5e0;
+  --lime: #d0e79b;
+  --clay: #f0c2b4;
+  --warm: #2a1a22;
   }
-  .demo-note { margin-bottom: 1.3rem; }
-  .at-a-glance { padding-inline: 1rem; }
+  .num { background: #d0e79b; color: #4a1028; }
+  .figure { background: var(--warm); }
 }
 </style>
 </head>
 <body>
-  <a class="skip-link" href="#brief">Skip to brief</a>
+  <a class="skip-link" href="#facts">Skip to facts</a>
   <main class="page" id="brief">
-    <p class="demo-note"><strong>Public demo</strong> · Synthetic inputs and fictional sources; no inbox data or real newsletter content.</p>
-    <header class="masthead">
+    <p class="demo-note"><strong>Public demo</strong> · Synthetic inputs and fictional sources; no inbox data or real newsletter content.</p>    <header class="masthead">
+      <p class="kicker">Tuesday 28 July 2026</p>
       <h1>Your Morning Brief</h1>
-      <p class="issue-meta">Tue, Jul 28, 2026 &nbsp;·&nbsp; 4 min essentials</p>
     </header>
-    <aside class="at-a-glance" aria-labelledby="glance-title">
-      <h2 id="glance-title">5 things to remember today</h2>
-      <ol><li>Workflow maps came before model selection</li><li>Two status calls became one decision log</li><li>Invoice tests began with mismatch categories</li><li>Repairability joined a fictional buying scorecard</li><li>A review date made old decisions visibly revisable</li></ol>
-    </aside>
-    <section aria-labelledby="lead-section">
-      <h2 class="section-heading" id="lead-section">The Big Story</h2>
-      <article class="lead">
-        <h3>The best AI pilots started with the work, not the model</h3>
-        <p class="lead-summary">Two fictional dispatches point to the same operating choice. Teams mapped the current handoff, defined exceptions and agreed on stop conditions before trying an assistant. One pilot&#x27;s first gain was finding three rules that contradicted each other.</p>
-        <p class="why"><strong>Why·</strong> A model cannot repair an unclear operating process. The early design work makes a pilot safer to run and gives the team a more useful way to judge it.</p>
-        <p class="key-fact">Remember · 120 fabricated tickets exposed three conflicting escalation rules</p>
-        <blockquote class="thread"><span>Today’s through-line</span>“The useful pattern today is simple: small teams get more from automation when they redesign the handoff before they choose the tool.”</blockquote>
-        <p class="source">→ <a href="https://signal-and-form.example/benchmark-before-bot" rel="noopener noreferrer">Signal &amp; Form + Workbench Weekly (fictional)</a></p>
+    <nav class="progress" aria-label="In this brief">
+      <p class="progress-meta"><b>4 min</b> · 5 facts · 1 big story · 5 sections</p>
+      <ol><li><a href="#facts">Facts</a></li><li><a href="#story">Story</a></li><li><a href="#operations">Operations</a></li><li><a href="#finance-operations">Finance operations</a></li><li><a href="#responsible-technology">Responsible technology</a></li><li><a href="#read-longer">Read longer</a></li><li><a href="#figures">Markets</a></li></ol>
+    </nav>
+    <section class="section" id="facts" aria-labelledby="glance-title">
+      <header class="section-head">
+        <span class="tag" style="background:#d0e79b;color:#32121f">Start here</span>
+        <h2 id="glance-title" class="sr-only">5 things to remember today</h2>
+      </header>
+      <ol class="fact-list"><li><span class="num">1</span><p>Workflow maps came before model selection</p></li><li><span class="num">2</span><p>Two status calls became one decision log</p></li><li><span class="num">3</span><p>Invoice tests began with mismatch categories</p></li><li><span class="num">4</span><p>Repairability joined a fictional buying scorecard</p></li><li><span class="num">5</span><p>A review date made old decisions visibly revisable</p></li></ol>
+    </section>
+    <section class="section" id="story" aria-labelledby="lead-section">
+      <header class="section-head">
+        <span class="tag" style="background:#4a1028;color:#fffcf6">The big story</span>
+        <h2 id="lead-section" class="sr-only">The big story</h2>
+      </header>
+      <article class="card lead">
+        <h3>The best <b>AI</b> pilots started with the work, not the model</h3>
+        <p class="summary">Two fictional dispatches point to the same operating choice. Teams mapped the current handoff, defined exceptions and agreed on stop conditions before trying an assistant. One pilot&#x27;s first gain was finding three rules that contradicted each other.</p>
+        <p class="why"><span class="why-label">Why it matters.</span> A model cannot repair an unclear operating process. The early design work makes a pilot safer to run and gives the team a more useful way to judge it.</p>
+        <p class="key-fact"><span class="key-label">Key fact.</span> <b>120</b> fabricated tickets exposed three conflicting escalation rules</p>
+        
+        
+        <p class="thread"><span>Today’s through-line</span>The useful pattern today is simple: small teams get more from automation when they redesign the handoff before they choose the tool.</p>
+        <p class="source"><a href="https://signal-and-form.example/benchmark-before-bot" rel="noopener noreferrer">Signal &amp; Form + Workbench Weekly (fictional)</a></p>
       </article>
     </section>
-    <div class="sections"><section class="section" aria-labelledby="section-1"><div class="section-header"><h2 id="section-1">Operations</h2></div><details class="story-card"><summary>A decision log gave a small studio two hours back</summary><div class="story-body"><p>An invented 16-person studio replaced two weekly status calls with a shared log that named each open decision, its owner and its review date.</p><p class="why"><strong>Why·</strong> The log did more than reduce meetings. It turned vague updates into visible decisions that someone could close.</p><p class="key-fact">Remember · Reported meeting time moved from five to three hours per person</p><p class="source">→ <a href="https://common-thread.example/decision-log-trial" rel="noopener noreferrer">Common Thread Dispatch (fictional)</a></p></div></details><details class="story-card"><summary>A three-question memo stopped workarounds becoming policy</summary><div class="story-body"><p>A fictional team records what it is testing, what evidence would count and when it will decide. The final decision stays attached to the experiment.</p><p class="why"><strong>Why·</strong> A stop date turns an experiment into a deliberate choice instead of a temporary process that nobody revisits.</p><p class="key-fact">Remember · Every experiment ends with a named decision date</p><p class="source">→ <a href="https://field-manual.example/three-question-memo" rel="noopener noreferrer">Field Manual (fictional)</a></p></div></details></section><section class="section" aria-labelledby="section-2"><div class="section-header"><h2 id="section-2">Finance operations</h2></div><details class="story-card"><summary>The invoice test measured the mistakes that mattered</summary><div class="story-body"><p>A fictional finance team created four mismatch categories, then tested extraction software on 60 fabricated invoices. Eight cases stayed in human review.</p><p class="why"><strong>Why·</strong> A useful evaluation reflects the team&#x27;s actual risk. One headline accuracy number would hide whether the tool fails on the cases people care about.</p><p class="key-fact">Remember · Four mismatch categories made vendor comparisons specific</p><p class="source">→ <a href="https://ledgerline-lab.example/invoice-mismatch-categories" rel="noopener noreferrer">Ledgerline Lab Notes (fictional)</a></p></div></details></section><section class="section" aria-labelledby="section-3"><div class="section-header"><h2 id="section-3">Responsible technology</h2></div><details class="story-card"><summary>A hardware shortlist made operating life visible</summary><div class="story-body"><p>A fictional co-working group scored spare parts, battery replacement and five-year software support alongside laptop price.</p><p class="why"><strong>Why·</strong> Procurement choices look different when teams compare how long equipment can stay useful, not only what it costs on day one.</p><p class="key-fact">Remember · Five-year support became a weighted buying criterion</p><p class="source">→ <a href="https://circular-office.example/repairability-scorecard" rel="noopener noreferrer">Circular Office (fictional)</a></p></div></details></section><section class="section" aria-labelledby="section-4"><div class="section-header"><h2 id="section-4">Read longer</h2></div><details class="story-card"><summary>The smallest useful knowledge record includes a review date</summary><div class="story-body"><p>A fictional essay proposes a four-field note for durable team memory: context, decision, owner and review date.</p><p class="why"><strong>Why·</strong> The review date makes an old choice visibly revisable. That is more useful than adding another permanent page to a large internal wiki.</p><p class="key-fact">Remember · Context · decision · owner · review date</p><p class="source">→ <a href="https://long-ledger.example/memory-with-review-dates" rel="noopener noreferrer">The Long Ledger (fictional)</a></p></div></details></section></div>
-    <footer class="footer">
+    
+<section class="section" id="operations" aria-labelledby="h-operations"><header class="section-head"><span class="tag" style="background:#ecb7aa;color:#32121f">Operations</span><h2 id="h-operations" class="sr-only">Operations</h2></header><article class="card"><h3>A decision log gave a small studio two hours back</h3><p class="summary">An invented 16-person studio replaced two weekly status calls with a shared log that named each open decision, its owner and its review date.</p><p class="why"><span class="why-label">Why it matters.</span> The log did more than reduce meetings. It turned vague updates into visible decisions that someone could close.</p><p class="key-fact"><span class="key-label">Key fact.</span> Reported meeting time moved from five to three hours per person</p><p class="source"><a href="https://common-thread.example/decision-log-trial" rel="noopener noreferrer">Common Thread Dispatch (fictional)</a></p></article><article class="card"><h3>A three-question memo stopped workarounds becoming policy</h3><p class="summary">A fictional team records what it is testing, what evidence would count and when it will decide. The final decision stays attached to the experiment.</p><p class="why"><span class="why-label">Why it matters.</span> A stop date turns an experiment into a deliberate choice instead of a temporary process that nobody revisits.</p><p class="key-fact"><span class="key-label">Key fact.</span> Every experiment ends with a named decision date</p><p class="source"><a href="https://field-manual.example/three-question-memo" rel="noopener noreferrer">Field Manual (fictional)</a></p></article></section><section class="section" id="finance-operations" aria-labelledby="h-finance-operations"><header class="section-head"><span class="tag" style="background:#dce5ee;color:#1e2a44">Finance operations</span><h2 id="h-finance-operations" class="sr-only">Finance operations</h2></header><article class="card"><h3>The invoice test measured the mistakes that mattered</h3><p class="summary">A fictional finance team created four mismatch categories, then tested extraction software on <b>60</b> fabricated invoices. Eight cases stayed in human review.</p><p class="why"><span class="why-label">Why it matters.</span> A useful evaluation reflects the team&#x27;s actual risk. One headline accuracy number would hide whether the tool fails on the cases people care about.</p><p class="key-fact"><span class="key-label">Key fact.</span> Four mismatch categories made vendor comparisons specific</p><p class="source"><a href="https://ledgerline-lab.example/invoice-mismatch-categories" rel="noopener noreferrer">Ledgerline Lab Notes (fictional)</a></p></article></section><section class="section" id="responsible-technology" aria-labelledby="h-responsible-technology"><header class="section-head"><span class="tag" style="background:#d8d3e8;color:#4a1028">Responsible technology</span><h2 id="h-responsible-technology" class="sr-only">Responsible technology</h2></header><article class="card"><h3>A hardware shortlist made operating life visible</h3><p class="summary">A fictional co-working group scored spare parts, battery replacement and five-year software support alongside laptop price.</p><p class="why"><span class="why-label">Why it matters.</span> Procurement choices look different when teams compare how long equipment can stay useful, not only what it costs on day one.</p><p class="key-fact"><span class="key-label">Key fact.</span> Five-year support became a weighted buying criterion</p><p class="source"><a href="https://circular-office.example/repairability-scorecard" rel="noopener noreferrer">Circular Office (fictional)</a></p></article></section><section class="section" id="read-longer" aria-labelledby="h-read-longer"><header class="section-head"><span class="tag" style="background:#f5d4aa;color:#4a1028">Read longer</span><h2 id="h-read-longer" class="sr-only">Read longer</h2></header><article class="card"><h3>The smallest useful knowledge record includes a review date</h3><p class="summary">A fictional essay proposes a four-field note for durable team memory: context, decision, owner and review date.</p><p class="why"><span class="why-label">Why it matters.</span> The review date makes an old choice visibly revisable. That is more useful than adding another permanent page to a large internal wiki.</p><p class="key-fact"><span class="key-label">Key fact.</span> Context · decision · owner · review date</p><p class="source"><a href="https://long-ledger.example/memory-with-review-dates" rel="noopener noreferrer">The Long Ledger (fictional)</a></p></article></section>
+    
+    <aside class="section markets" id="figures" aria-labelledby="figures-title"><header class="section-head"><span class="tag" style="background:#dde4d9;color:#32121f">Markets</span><h2 id="figures-title" class="sr-only">Markets</h2></header><details class="markets-toggle"><summary><span class="markets-line">EUR/USD 1.00 · EUR/GBP 0.80 · Bitcoin 10,000 · Ether 1,000</span><span class="when-closed">Show</span><span class="when-open">Hide</span></summary><div class="markets-panel"><p class="figure-note">Example figures, not a live price.</p><div class="figure-grid"><div class="figure"><p class="figure-label">EUR to USD</p><p class="figure-value">1.00</p><p class="figure-meta">Example · example</p></div><div class="figure"><p class="figure-label">EUR to GBP</p><p class="figure-value">0.80</p><p class="figure-meta">Example · example</p></div><div class="figure"><p class="figure-label">Bitcoin</p><p class="figure-value">10,000</p><p class="figure-meta">Example · example</p></div><div class="figure"><p class="figure-label">Ether</p><p class="figure-value">1,000</p><p class="figure-meta">Example · example</p></div></div></div></details></aside>
+    
+    <footer class="ending">
+      <p class="thats-it">That’s it for today.</p>
       <p><strong>Tuesday brief</strong> · How this public demo was made</p>
-        <div class="pipeline" aria-label="Demo architecture">
-          <span>synthetic inputs</span><span>structured synthesis</span><span>schema validation</span><span>deterministic HTML</span>
-        </div>
+      <div class="pipeline" aria-label="Demo architecture"><span>synthetic inputs</span><span>structured synthesis</span><span>schema validation</span><span>deterministic HTML</span></div>
       <p class="source-check"><strong>Source check</strong> · 6 links in this edition, each one matched to an item in the inputs. A link that isn’t in the inputs stops the build.</p>
       <p class="footer-note">Every name, publication, excerpt and claim in this edition is fictional. The public repository contains no inbox connection or production personalization logic.</p>
     </footer>
