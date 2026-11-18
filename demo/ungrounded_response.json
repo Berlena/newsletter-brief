@@ -1,0 +1,85 @@
+{
+  "synthetic": true,
+  "title": "Your Morning Brief",
+  "edition": "Tuesday brief",
+  "date": "2026-07-28",
+  "read_time_minutes": 4,
+  "opening_note": "The useful pattern today is simple: small teams get more from automation when they redesign the handoff before they choose the tool.",
+  "top_lines": [
+    "Workflow maps came before model selection",
+    "Two status calls became one decision log",
+    "Invoice tests began with mismatch categories",
+    "Repairability joined a fictional buying scorecard",
+    "A review date made old decisions visibly revisable"
+  ],
+  "lead_story": {
+    "title": "The best AI pilots started with the work, not the model",
+    "summary": "Two fictional dispatches point to the same operating choice. Teams mapped the current handoff, defined exceptions and agreed on stop conditions before trying an assistant. One pilot's first gain was finding three rules that contradicted each other.",
+    "why_it_matters": "A model cannot repair an unclear operating process. The early design work makes a pilot safer to run and gives the team a more useful way to judge it.",
+    "key_fact": "120 fabricated tickets exposed three conflicting escalation rules",
+    "source_label": "Signal & Form + Workbench Weekly (fictional)",
+    "source_url": "https://signal-and-form.example/benchmark-before-bot"
+  },
+  "sections": [
+    {
+      "name": "Operations",
+      "stories": [
+        {
+          "title": "A decision log gave a small studio two hours back",
+          "summary": "An invented 16-person studio replaced two weekly status calls with a shared log that named each open decision, its owner and its review date.",
+          "why_it_matters": "The log did more than reduce meetings. It turned vague updates into visible decisions that someone could close.",
+          "key_fact": "Reported meeting time moved from five to three hours per person",
+          "source_label": "Common Thread Dispatch (fictional)",
+          "source_url": "https://invented-source.example/a-story-nobody-sent-you"
+        },
+        {
+          "title": "A three-question memo stopped workarounds becoming policy",
+          "summary": "A fictional team records what it is testing, what evidence would count and when it will decide. The final decision stays attached to the experiment.",
+          "why_it_matters": "A stop date turns an experiment into a deliberate choice instead of a temporary process that nobody revisits.",
+          "key_fact": "Every experiment ends with a named decision date",
+          "source_label": "Field Manual (fictional)",
+          "source_url": "https://field-manual.example/three-question-memo"
+        }
+      ]
+    },
+    {
+      "name": "Finance operations",
+      "stories": [
+        {
+          "title": "The invoice test measured the mistakes that mattered",
+          "summary": "A fictional finance team created four mismatch categories, then tested extraction software on 60 fabricated invoices. Eight cases stayed in human review.",
+          "why_it_matters": "A useful evaluation reflects the team's actual risk. One headline accuracy number would hide whether the tool fails on the cases people care about.",
+          "key_fact": "Four mismatch categories made vendor comparisons specific",
+          "source_label": "Ledgerline Lab Notes (fictional)",
+          "source_url": "https://ledgerline-lab.example/invoice-mismatch-categories"
+        }
+      ]
+    },
+    {
+      "name": "Responsible technology",
+      "stories": [
+        {
+          "title": "A hardware shortlist made operating life visible",
+          "summary": "A fictional co-working group scored spare parts, battery replacement and five-year software support alongside laptop price.",
+          "why_it_matters": "Procurement choices look different when teams compare how long equipment can stay useful, not only what it costs on day one.",
+          "key_fact": "Five-year support became a weighted buying criterion",
+          "source_label": "Circular Office (fictional)",
+          "source_url": "https://circular-office.example/repairability-scorecard"
+        }
+      ]
+    },
+    {
+      "name": "Read longer",
+      "stories": [
+        {
+          "title": "The smallest useful knowledge record includes a review date",
+          "summary": "A fictional essay proposes a four-field note for durable team memory: context, decision, owner and review date.",
+          "why_it_matters": "The review date makes an old choice visibly revisable. That is more useful than adding another permanent page to a large internal wiki.",
+          "key_fact": "Context · decision · owner · review date",
+          "source_label": "The Long Ledger (fictional)",
+          "source_url": "https://long-ledger.example/memory-with-review-dates"
+        }
+      ]
+    }
+  ]
+}

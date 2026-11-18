@@ -256,6 +256,14 @@ summary:focus-visible {
 .footer-note {
   line-height: 1.5;
 }
+.source-check {
+  margin: 0 0 0.65rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.72rem;
+}
 @media (max-width: 680px) {
   body { background: var(--paper); }
   .page {
@@ -268,6 +276,12 @@ summary:focus-visible {
   .at-a-glance { padding-inline: 1rem; }
 }
 """
+
+
+def _all_stories(brief: Brief) -> tuple[Story, ...]:
+    return (brief.lead_story,) + tuple(
+        story for section in brief.sections for story in section.stories
+    )
 
 
 def _source(story: Story) -> str:
@@ -316,6 +330,8 @@ def render_html(brief: Brief) -> str:
         for index, section in enumerate(brief.sections, start=1)
     )
     lead = brief.lead_story
+    source_count = len({story.source_url for story in _all_stories(brief)})
+    link_word = "link" if source_count == 1 else "links"
 
     return (
         "<!doctype html>\n"
@@ -361,6 +377,8 @@ def render_html(brief: Brief) -> str:
         "          <span>synthetic inputs</span><span>structured synthesis</span>"
         "<span>schema validation</span><span>deterministic HTML</span>\n"
         "        </div>\n"
+        f'      <p class="source-check"><strong>Source check</strong> · {source_count} {link_word} in this edition, '
+        "each one matched to an item in the inputs. A link that isn’t in the inputs stops the build.</p>\n"
         '      <p class="footer-note">Every name, publication, excerpt and claim in this edition is fictional. '
         "The public repository contains no inbox connection or production personalization logic.</p>\n"
         "    </footer>\n"

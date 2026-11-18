@@ -87,6 +87,19 @@ class RendererTests(unittest.TestCase):
         self.assertIn('<details class="story-card">', rendered)
         self.assertIn("Today’s through-line", rendered)
 
+    def test_footer_states_the_source_check(self) -> None:
+        rendered = render_html(self.brief)
+        urls = {self.brief.lead_story.source_url} | {
+            story.source_url
+            for section in self.brief.sections
+            for story in section.stories
+        }
+        self.assertIn(
+            f"{len(urls)} links in this edition, each one matched to an item in the inputs",
+            rendered,
+        )
+        self.assertIn("A link that isn’t in the inputs stops the build.", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

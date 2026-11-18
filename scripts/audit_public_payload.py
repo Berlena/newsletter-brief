@@ -59,9 +59,16 @@ def audit() -> list[str]:
     for path in sorted(expected - tracked):
         errors.append(f"whitelisted path is not tracked: {path}")
 
+    license_file = ROOT / "LICENSE"
+    if "LICENSE" not in tracked or not license_file.read_text(
+        encoding="utf-8"
+    ).startswith("MIT License"):
+        errors.append("LICENSE must be tracked and contain the MIT license")
+
     for path in sorted(tracked):
-        if Path(path).name.casefold().startswith("license"):
-            errors.append(f"license file is explicitly excluded: {path}")
+        name = Path(path).name.casefold()
+        if name.startswith("license") and path != "LICENSE":
+            errors.append(f"unexpected license file: {path}")
 
         data = (ROOT / path).read_bytes()
         if b"\0" in data:
@@ -102,7 +109,7 @@ def main() -> int:
     print("Email addresses: 0")
     print("Secret-shaped values: 0")
     print("Unexpected URL hosts: 0")
-    print("License files: 0")
+    print("License: MIT (LICENSE)")
     return 0
 
 

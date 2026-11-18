@@ -11,12 +11,14 @@ Only these concepts and components are approved for publication:
 - the four-stage architecture: newsletter inputs → structured synthesis →
   validation → deterministic HTML;
 - a small Python CLI with separate offline and live demo paths;
-- synthetic newsletter fixtures and a prepared synthetic response;
+- synthetic newsletter fixtures, a prepared synthetic response and a
+  deliberately broken response with one invented link;
 - a deliberately limited public prompt and JSON Schema;
 - a dependency-free renderer for a static, responsive demo;
 - tests for validation, escaping, grounding, missing variables and rendering;
 - a CI workflow that uses a mocked AI response and no credentials;
-- the generated static page, screenshot and public-facing documentation.
+- the generated static page, screenshot and public-facing documentation;
+- the MIT license in `LICENSE`.
 
 Every file in the repository must fit one of those categories.
 `PUBLIC_MANIFEST.txt` enumerates the exact publishable file set, and the audit
@@ -38,11 +40,12 @@ The public repository does not contain:
 - Input JSON must set `synthetic` to `true`.
 - Structured output must also set `synthetic` to `true`.
 - Every rendered source URL must match one supplied in the input fixture.
+  CI also feeds in a response with one invented link and fails if it renders.
 - The renderer accepts a validated model and escapes text and link attributes.
 - Offline generation makes no network request and needs no environment variables.
 - CI injects a fake Responses API client; it never uses an API key.
 - CI compares the exact tracked file set with `PUBLIC_MANIFEST.txt` and scans
   public text for email addresses, secret-shaped values and unexpected URL hosts.
 
-The source-visible demo is intentionally not a distributable version of the
-private system or of any future hosted service.
+The demo is MIT licensed. It shows the pattern, not the private system: none
+of the private collection, ranking or delivery code is in this repository.

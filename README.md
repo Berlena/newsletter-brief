@@ -1,66 +1,81 @@
 # Newsletter Brief
 
-> A source-visible demo of the system I built to turn an overloaded newsletter
-> inbox into one useful daily brief.
+**One rule if you let AI summarize your newsletters: a link only makes it into
+the summary if it was actually in the source. Anything else gets rejected.**
+
+I'd rather miss a story than read one the model made up. This repo is a small,
+runnable version of the morning brief I built for myself in June 2026, with
+fictional newsletters, so you can see how that rule works in code.
 
 [Live synthetic demo](https://berlena.github.io/newsletter-brief/) ·
-[Publication boundary](PUBLICATION_BOUNDARY.md)
+[Publication boundary](PUBLICATION_BOUNDARY.md) · MIT licensed
 
-![A production-faithful synthetic Newsletter Brief edition with indigo section rules, an editorial serif and a five-item retention card](docs/screenshot.png)
+![A synthetic Newsletter Brief edition: five things to remember, one big story and expandable headlines](docs/screenshot.png)
 
-The words and sources in the screenshot are fictional. The presentation mirrors
-the private email: a compact editorial column, five things to remember, one big
-story, indigo section rules, and expandable headlines for skim-first reading.
+Every publication, person, excerpt and link in the screenshot is fictional.
 
-I subscribed to useful newsletters faster than I could read them. The result was
-an inbox full of good material and no reliable way to turn it into a view of the
-day. I built a private system that separates collection, synthesis and
-presentation, then gives me one brief I can actually use.
+## Why the rule
 
-I am an operator, not a software engineer by training. I taught myself to build
-with agentic coding tools because this was an operating problem where a small,
-purpose-built system was more useful than another spreadsheet or process. The
-private version has been in daily use since June 2026.
+I subscribe to more newsletters than I have time to read. Summarizing them with
+a model is the easy part. The part I didn't trust was the links: a summary can
+sound right and point to a story that was never in my inbox.
 
-This repository is a deliberately limited public demo. It shows the architecture
-and a runnable implementation without exposing inbox access, real subscriptions,
-production prompts or future product infrastructure.
+So the model doesn't get the last word. After it writes the brief, plain code
+compares every link in the output with the links in the inputs. If one doesn't
+match, the build stops and nothing gets rendered. The model can still get a
+summary wrong, so I still click through on anything I'm going to repeat. But it
+can't invent a source.
+
+You can watch it fail on purpose. `demo/ungrounded_response.json` is the same
+brief with one invented link:
+
+```bash
+python -m newsletter_brief demo --offline \
+  --prepared-response demo/ungrounded_response.json \
+  --output dist/ungrounded.html
+```
+
+```text
+error: structured output contains source URLs absent from the input feed: https://invented-source.example/a-story-nobody-sent-you
+```
+
+No HTML file is written. CI runs this on every push and fails if that brief
+ever renders.
 
 ## How it works
 
 ```text
 synthetic newsletter inputs
           ↓
-structured AI synthesis
+structured AI synthesis (strict JSON Schema)
           ↓
-strict schema + source grounding
+validation + link check against the inputs
           ↓
 deterministic HTML renderer
           ↓
 one static brief
 ```
 
-Newsletter inputs and presentation never blur together. Synthesis produces a
-validated data object; the renderer owns every layout and styling decision. That
-separation makes the output testable, predictable and safe to escape.
+The model only fills in a data object. Code checks it, and the renderer owns
+every layout decision. That keeps the output testable and the HTML escaped.
 
 ## Run the offline demo
 
-Python 3.12 is the only requirement. The offline path uses synthetic inputs and a
-committed prepared response. It installs nothing, reads no environment variables
-and makes no network request.
+Needs Python 3.12 or newer and nothing else. The offline path uses the
+synthetic inputs and a committed prepared response. It installs nothing, reads
+no environment variables and makes no network requests.
 
 ```bash
 python -m newsletter_brief demo --offline --output dist/index.html
 ```
 
-Open `dist/index.html` in a browser. The generated file should match
+Open `dist/index.html` in a browser. It should match
 [`docs/index.html`](docs/index.html) byte for byte.
 
 ## Run live synthesis
 
-Live mode sends the same synthetic fixture to the OpenAI Responses API with a
-strict JSON Schema. You choose the model and supply your own credentials.
+Live mode sends the same synthetic inputs to the OpenAI Responses API with a
+strict JSON Schema. You bring your own key and pick the model.
 
 ```bash
 python -m venv .venv
@@ -68,32 +83,25 @@ source .venv/bin/activate
 python -m pip install -e ".[live]"
 
 export OPENAI_API_KEY="your-api-key"
-export OPENAI_MODEL="gpt-5.6-luna"
+export OPENAI_MODEL="a-model-that-supports-structured-outputs"
 python -m newsletter_brief demo --live --output dist/index.html
 ```
 
-The example uses `gpt-5.6-luna`, a compatible non-fine-tuned model that supports
-Structured Outputs. You can replace it with another compatible model available
-to your project.
+Any model on your project that supports Structured Outputs should work. The key
+is read from the environment and never written to disk, and the request sets
+response storage to false. API calls cost money on your OpenAI account.
 
-The API key is read from the environment and is never written to disk. The demo
-also sets API response storage to false. API usage may incur charges on your
-OpenAI account.
+## What's public and what isn't
 
-## What is automated, and why
+The public demo doesn't read email, run on a schedule or send anything. My
+private version does, and that part stays private because it would expose my
+inbox and setup without making the idea any clearer.
 
-- **Structured synthesis** turns several excerpts into one predictable object.
-  A schema keeps content generation separate from layout.
-- **Source grounding** rejects any output link that was not present in the
-  supplied inputs.
-- **Deterministic rendering** makes the page reproducible and keeps HTML,
-  typography and responsive behavior under normal code review.
-- **Offline generation and mocked CI** make the core path testable without
-  credentials, network access or paid API calls.
-
-The public demo does not fetch email, schedule jobs or send a brief. Those
-capabilities are private because they would expose personal data and production
-infrastructure rather than clarify the core idea.
+There are no mailbox credentials, subscriptions or real newsletter content
+here. Every file in the repo is listed in
+[`PUBLIC_MANIFEST.txt`](PUBLIC_MANIFEST.txt), and an audit script fails if
+anything else gets added or if it finds an email address, a secret-shaped
+string or an unexpected URL. See [PUBLICATION_BOUNDARY.md](PUBLICATION_BOUNDARY.md).
 
 ## Test
 
@@ -104,30 +112,9 @@ python -m newsletter_brief demo --offline --output dist/index.html
 cmp dist/index.html docs/index.html
 ```
 
-The tests cover schema validation, source grounding, HTML escaping,
-deterministic rendering, missing environment variables and a mocked live API
-response. The publication audit also compares every tracked path with the
-explicit [`PUBLIC_MANIFEST.txt`](PUBLIC_MANIFEST.txt) whitelist and scans text
-files for accidental email addresses, secret-shaped values and unexpected URL
-hosts.
+The tests cover schema validation, the link check, HTML escaping, deterministic
+rendering, missing environment variables and a mocked live API response.
 
-## Privacy and the public/private line
+## License
 
-Every publication, company, person, excerpt, number and link in the demo is
-fictional. The reserved `.example` domains cannot be mistaken for real sources.
-There are no mailbox credentials, labels, addresses, subscriptions or genuine
-newsletter contents here.
-
-The private system has additional collection, scheduling, ranking,
-personalization and delivery behavior. None of that code or repository history
-is included. See [PUBLICATION_BOUNDARY.md](PUBLICATION_BOUNDARY.md) for the
-explicit whitelist and exclusions.
-
-I am considering whether a hosted version could be useful to other newsletter
-readers. This repository is an evaluation surface, not that product's
-infrastructure.
-
-## Copyright
-
-Copyright © 2026 Lena Schaefer. This source is published for evaluation and
-portfolio purposes; no license is granted at this stage.
+MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Lena Schaefer.

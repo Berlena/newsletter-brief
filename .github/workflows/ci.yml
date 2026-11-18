@@ -23,3 +23,10 @@ jobs:
         run: python -m newsletter_brief demo --offline --output dist/index.html
       - name: Confirm the committed Pages artifact is reproducible
         run: cmp dist/index.html docs/index.html
+      - name: Confirm a brief with an invented link is rejected
+        run: |
+          if python -m newsletter_brief demo --offline --prepared-response demo/ungrounded_response.json --output dist/ungrounded.html; then
+            echo "an ungrounded brief was rendered" >&2
+            exit 1
+          fi
+          test ! -e dist/ungrounded.html
