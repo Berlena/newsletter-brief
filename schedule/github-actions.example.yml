@@ -1,0 +1,41 @@
+# This file is a template. It lives outside .github/workflows, so GitHub does not run it.
+#
+# WARNING. If you copy this into .github/workflows and remove the `if: false` line,
+# your newsletter text is copied onto GitHub's runners and then sent to the model provider you set.
+# Keep that repository private. People who can open the Actions logs can read
+# the run's output. Do not put the mailbox password or the API key in the file.
+# Store them as repository secrets.
+#
+# The job below is disabled. A manual run still does nothing until you delete
+# the `if: false` line. Add a schedule only after you have accepted the warning.
+
+name: own-inbox
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  brief:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[live]"
+      - name: Write config.toml from the NEWSLETTER_BRIEF_CONFIG secret
+        env:
+          NEWSLETTER_BRIEF_CONFIG: ${{ secrets.NEWSLETTER_BRIEF_CONFIG }}
+        run: python -c "import os, pathlib; pathlib.Path('config.toml').write_text(os.environ['NEWSLETTER_BRIEF_CONFIG'], encoding='utf-8')"
+      - name: Write the brief
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          NEWSLETTER_BRIEF_MAILBOX_PASSWORD: ${{ secrets.NEWSLETTER_BRIEF_MAILBOX_PASSWORD }}
+        run: python -m newsletter_brief run --config config.toml

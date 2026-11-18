@@ -31,7 +31,7 @@ class CliTests(unittest.TestCase):
                 result = main(["demo", "--live", "--output", str(output)])
             self.assertEqual(2, result)
             self.assertFalse(output.exists())
-            self.assertIn("OPENAI_API_KEY, OPENAI_MODEL", stderr.getvalue())
+            self.assertIn("LLM settings are missing: LLM_MODEL, LLM_API_KEY", stderr.getvalue())
 
     def test_offline_command_refuses_a_brief_with_an_invented_link(self) -> None:
         ungrounded = Path(__file__).resolve().parents[1] / "demo" / "ungrounded_response.json"

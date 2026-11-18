@@ -8,9 +8,13 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from newsletter_brief.config import ConfigError, load_config
 from newsletter_brief.inputs import InputError, load_feed
+from newsletter_brief.provider import DEFAULT_BASE_URL, ProviderError, resolve_provider
 from newsletter_brief.renderer import render_html
+from newsletter_brief.run import RunError, run_brief
 from newsletter_brief.schema import SchemaError
+from newsletter_brief.secrets import LEGACY_API_ENV, LLM_API_ENV, MAILBOX_ENV, redact
 from newsletter_brief.synthesis import (
     SynthesisError,
     live_synthesis,
@@ -38,7 +42,7 @@ def _parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--live",
         action="store_true",
-        help="Synthesize the synthetic inputs with the OpenAI Responses API.",
+        help="Synthesize the synthetic inputs with the configured model provider.",
     )
     demo.add_argument(
         "--output",
@@ -58,37 +62,85 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_PREPARED_RESPONSE,
         help="Prepared structured response used by --offline.",
     )
+    run = commands.add_parser(
+        "run",
+        help="Read your own inbox and write a brief.",
+    )
+    run.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="Path to config.toml. Copy config.example.toml and edit it.",
+    )
+    run.add_argument(
+        "--eml-dir",
+        type=Path,
+        default=None,
+        help="Read this folder of .eml files instead of the mailbox.",
+    )
+    run.add_argument(
+        "--no-send",
+        action="store_true",
+        help="Write the HTML file and do not send email.",
+    )
     return parser
 
 
-def _live_environment() -> tuple[str, str]:
-    missing = [
-        name for name in ("OPENAI_API_KEY", "OPENAI_MODEL") if not os.getenv(name)
-    ]
-    if missing:
-        joined = ", ".join(missing)
-        raise SynthesisError(f"live mode requires environment variables: {joined}")
-    return os.environ["OPENAI_API_KEY"], os.environ["OPENAI_MODEL"]
+def _secret_names() -> tuple[str, ...]:
+    return (LLM_API_ENV, LEGACY_API_ENV, MAILBOX_ENV)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+def _demo(args: argparse.Namespace) -> int:
     try:
         feed = load_feed(args.inputs)
         if args.offline:
             brief = prepared_synthesis(args.prepared_response, feed)
             mode_label = "offline"
         else:
-            api_key, model = _live_environment()
-            brief = live_synthesis(feed, api_key=api_key, model=model)
-            mode_label = f"live / {model}"
+            provider = resolve_provider()
+            brief = live_synthesis(
+                feed,
+                api_key=provider.api_key or "",
+                model=provider.model,
+                base_url=provider.base_url or DEFAULT_BASE_URL,
+            )
+            mode_label = f"live / {provider.model}"
 
         output = args.output.resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(render_html(brief), encoding="utf-8")
-    except (InputError, SchemaError, SynthesisError, OSError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
+    except (InputError, SchemaError, SynthesisError, ProviderError, OSError) as exc:
+        secret_values = [
+            os.environ[name] for name in _secret_names() if os.environ.get(name)
+        ]
+        print(f"error: {redact(str(exc), secret_values)}", file=sys.stderr)
         return 2
 
     print(f"Wrote {mode_label} synthetic demo to {output}")
     return 0
+
+
+def _known_secrets() -> list[str]:
+    return [os.environ[name] for name in _secret_names() if os.environ.get(name)]
+
+
+def _personal_run(args: argparse.Namespace) -> int:
+    try:
+        config = load_config(args.config)
+        output = run_brief(
+            config,
+            eml_dir=args.eml_dir,
+            send=not args.no_send,
+        )
+    except (ConfigError, SynthesisError, ProviderError, RunError, OSError) as exc:
+        print(f"error: {redact(str(exc), _known_secrets())}", file=sys.stderr)
+        return 2
+    print(f"Wrote brief to {output}")
+    return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    if args.command == "run":
+        return _personal_run(args)
+    return _demo(args)
