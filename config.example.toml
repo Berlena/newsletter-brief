@@ -71,6 +71,12 @@ allow = [
 # timeout_seconds = 8
 # max_bytes = 500000
 
+# Optional Wikipedia lookups for the card context line. Off by default.
+# [context]
+# lookup = false
+# max_lookups = 4
+# timeout_seconds = 8
+
 # [edition]
 # facts = 5
 # max_cards = 3

@@ -24,6 +24,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual((), config.sections)
         self.assertEqual((), config.feeds)
         self.assertFalse(config.articles.enabled)
+        self.assertFalse(config.context.lookup)
         self.assertEqual(5, config.fact_count)
         self.assertEqual(2, config.memory.days)
 

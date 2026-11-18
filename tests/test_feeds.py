@@ -92,6 +92,8 @@ class FeedParseTests(unittest.TestCase):
             "source_label": "Harbor Daily",
             "source_url": url,
             "reactions": "",
+            "context": "",
+            "context_source": "",
         }
         payload = {
             "title": "Brief",

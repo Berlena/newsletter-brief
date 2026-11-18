@@ -16,6 +16,7 @@ newsletter_brief/__main__.py
 newsletter_brief/articles.py
 newsletter_brief/cli.py
 newsletter_brief/config.py
+newsletter_brief/context_lookup.py
 newsletter_brief/feeds.py
 newsletter_brief/figures.py
 newsletter_brief/http_get.py
@@ -40,6 +41,8 @@ tests/fixtures/article.html
 tests/fixtures/canopy-atom.xml
 tests/fixtures/harbor-rss.xml
 tests/fixtures/hostile-feed.xml
+tests/fixtures/wiki-summary.json
+tests/test_context.py
 tests/own_inbox_samples.py
 tests/test_articles.py
 tests/test_cli.py

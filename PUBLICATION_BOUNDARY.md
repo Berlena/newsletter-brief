@@ -16,6 +16,7 @@ Approved for publication:
   sender domains and counts;
 - optional https RSS and Atom feeds, parsed with defusedxml, and recorded
   feed fixtures;
+- an optional Wikipedia summary lookup for card context, off by default;
 - a config example with no passwords in it;
 - a model call that uses any OpenAI-compatible endpoint, chosen by settings;
 - foreign-exchange and crypto figures fetched by code from public sources

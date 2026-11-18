@@ -122,6 +122,8 @@ def _edition_payload() -> dict[str, object]:
         "source_label": "Harbor Daily",
         "source_url": url,
         "reactions": "",
+        "context": "",
+        "context_source": "",
     }
     return {
         "title": "Your Morning Brief",

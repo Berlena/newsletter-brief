@@ -40,6 +40,7 @@ _KNOWN_SECTIONS = {
     "articles",
     "memory",
     "edition",
+    "context",
 }
 _DAY_WORDS = {"weekday", "sat", "sun", "weekend"}
 
@@ -83,6 +84,13 @@ class ArticleConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ContextConfig:
+    lookup: bool
+    max_lookups: int
+    timeout_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
 class MemoryConfig:
     path: Path
     days: int
@@ -114,6 +122,7 @@ class AppConfig:
     sections: tuple[SectionConfig, ...] = ()
     feeds: tuple[FeedSource, ...] = ()
     articles: ArticleConfig | None = None
+    context: ContextConfig | None = None
     memory: MemoryConfig | None = None
     fact_count: int = 5
     max_cards: int = 3
@@ -281,6 +290,7 @@ def load_config(path: Path) -> AppConfig:
     fact_count, max_cards = _edition(raw.get("edition"))
     feeds = _feeds(raw.get("feeds"), default_hours=mailbox.hours)
     articles = _articles(raw.get("articles"))
+    context = _context_lookup(raw.get("context"))
     memory = _memory(raw.get("memory"), config_path=path)
     return AppConfig(
         mailbox=mailbox,
@@ -311,6 +321,7 @@ def load_config(path: Path) -> AppConfig:
         sections=sections,
         feeds=feeds,
         articles=articles,
+        context=context,
         memory=memory,
         fact_count=fact_count,
         max_cards=max_cards,
@@ -562,6 +573,28 @@ def _articles(value: Any) -> ArticleConfig:
             "articles.max_bytes",
             minimum=10_000,
             maximum=2_000_000,
+        ),
+    )
+
+
+def _context_lookup(value: Any) -> ContextConfig:
+    if value is None:
+        return ContextConfig(lookup=False, max_lookups=4, timeout_seconds=8)
+    if not isinstance(value, dict):
+        raise ConfigError("context must be a table")
+    extra = set(value) - {"lookup", "max_lookups", "timeout_seconds"}
+    if extra:
+        raise ConfigError("unknown fields in context: " + ", ".join(sorted(extra)))
+    lookup = value.get("lookup", False)
+    if not isinstance(lookup, bool):
+        raise ConfigError("context.lookup must be true or false")
+    return ContextConfig(
+        lookup=lookup,
+        max_lookups=_whole(
+            value.get("max_lookups", 4), "context.max_lookups", minimum=1, maximum=12
+        ),
+        timeout_seconds=_whole(
+            value.get("timeout_seconds", 8), "context.timeout_seconds", minimum=1, maximum=30
         ),
     )
 

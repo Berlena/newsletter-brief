@@ -10,6 +10,7 @@ from typing import Any
 
 from newsletter_brief.articles import fetch_articles
 from newsletter_brief.config import AppConfig
+from newsletter_brief.context_lookup import lookup_summaries, names_from_items
 from newsletter_brief.feeds import FeedError, FeedRequest, read_feeds
 from newsletter_brief.figures import fetch_figures
 from newsletter_brief.inbox import (
@@ -143,6 +144,7 @@ def run_brief(
     force: bool = False,
     feed_get: Any | None = None,
     article_get: Any | None = None,
+    context_get: Any | None = None,
 ) -> Path:
     secrets: list[str] = []
     try:
@@ -160,6 +162,7 @@ def run_brief(
             force=force,
             feed_get=feed_get,
             article_get=article_get,
+            context_get=context_get,
         )
     except AlreadySent:
         raise
@@ -185,6 +188,7 @@ def _run(
     force: bool,
     feed_get: Any | None,
     article_get: Any | None,
+    context_get: Any | None,
 ) -> Path:
     def note(message: str) -> None:
         LOGGER.info(redact(message, secrets))
@@ -341,6 +345,17 @@ def _run(
                 edition_date=edition_date,
                 items=model_items,
             )
+            context_sources = ()
+            if config.context is not None and config.context.lookup:
+                context_sources = tuple(
+                    source.as_dict()
+                    for source in lookup_summaries(
+                        names_from_items(model_items),
+                        timeout=config.context.timeout_seconds,
+                        max_lookups=config.context.max_lookups,
+                        get=context_get,
+                    )
+                )
             brief = live_edition_synthesis(
                 feed,
                 api_key=provider.api_key or "",
@@ -352,6 +367,7 @@ def _run(
                 fact_count=config.fact_count,
                 max_cards=config.max_cards,
                 usage=usage,
+                context_sources=context_sources,
             )
             brief = replace(
                 brief,

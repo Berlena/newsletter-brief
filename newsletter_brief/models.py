@@ -35,6 +35,8 @@ class Story:
     source_label: str
     source_url: str
     reactions: str = ""
+    context: str = ""
+    context_source: str = ""
 
 
 @dataclass(frozen=True, slots=True)

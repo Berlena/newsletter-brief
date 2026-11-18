@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html import escape
+from urllib.parse import urlsplit
 
 from newsletter_brief.models import Brief, Event, Figure, Section, Story
 
@@ -300,6 +301,17 @@ def _reactions(story: Story) -> str:
     return f'<p class="reactions"><strong>Reactions ·</strong> {escape(story.reactions)}</p>'
 
 
+def _context(story: Story) -> str:
+    if not story.context:
+        return ""
+    link = ""
+    if story.context_source:
+        url = escape(story.context_source, quote=True)
+        host = escape(urlsplit(story.context_source).hostname or "source")
+        link = f' <a href="{url}" rel="noopener noreferrer">{host}</a>'
+    return f'<p class="context">{escape(story.context)}{link}</p>'
+
+
 def _story_card(story: Story) -> str:
     return (
         '<details class="story-card">'
@@ -309,6 +321,7 @@ def _story_card(story: Story) -> str:
         f'<p class="why"><strong>Why·</strong> {escape(story.why_it_matters)}</p>'
         f'<p class="key-fact">Remember · {escape(story.key_fact)}</p>'
         f"{_reactions(story)}"
+        f"{_context(story)}"
         f"{_source(story)}"
         "</div>"
         "</details>"
@@ -464,6 +477,12 @@ _EDITION_CSS = """
   color: var(--ink);
   font-size: 0.92rem;
 }
+.context {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.context a { color: var(--muted); }
 @media (max-width: 680px) {
   .figure-grid { grid-template-columns: 1fr; }
 }
@@ -592,6 +611,7 @@ def _render_edition(brief: Brief) -> str:
         f'        <p class="why"><strong>Why·</strong> {escape(lead.why_it_matters)}</p>\n'
         f'        <p class="key-fact">Remember · {escape(lead.key_fact)}</p>\n'
         + (f"        {_reactions(lead)}\n" if lead.reactions else "")
+        + (f"        {_context(lead)}\n" if lead.context else "")
         + '        <blockquote class="thread"><span>Today’s through-line</span>'
         f"“{escape(brief.opening_note)}”</blockquote>\n"
         f"        {_source(lead)}\n"

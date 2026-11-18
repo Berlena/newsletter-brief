@@ -326,8 +326,14 @@ The brief asks the model for N short facts (default 5), one lead story, and
 story cards per section up to `edition.max_cards` (default 3). Each headline
 is a plain sentence that says who did what, in about 15 words, not a teaser.
 Each card adds one "why it matters" line in plain words, and can include a
-short reactions line from that source. Every link still has to be one of the
-input links.
+short reactions line from that source. A card may also include one `context`
+line of about 25 words: who a lesser-known company or person is, or one useful
+comparison that is not already in the newsletter text. That line is left empty
+unless it comes from a fetched article, another item in the same edition, or
+an optional Wikipedia summary. The page shows the source as a small link.
+Wikipedia lookups are off unless you set `context.lookup` to true. They are
+https only, time out, and stop after a few calls. Every link still has to be
+one of the input links.
 
 ```toml
 [edition]

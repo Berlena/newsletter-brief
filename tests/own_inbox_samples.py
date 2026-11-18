@@ -126,6 +126,8 @@ def sample_edition() -> dict[str, object]:
             "source_label": "Harbor Daily",
             "source_url": harbor["url"],
             "reactions": "",
+            "context": "",
+            "context_source": "",
         },
         "sections": [
             {
@@ -139,6 +141,8 @@ def sample_edition() -> dict[str, object]:
                         "source_label": "Canopy Notes",
                         "source_url": canopy["url"],
                         "reactions": "",
+                        "context": "",
+                        "context_source": "",
                     }
                 ],
             },
@@ -153,6 +157,8 @@ def sample_edition() -> dict[str, object]:
                         "source_label": "North Stand",
                         "source_url": stand["url"],
                         "reactions": "",
+                        "context": "",
+                        "context_source": "",
                     },
                     {
                         "title": field["subject"],
@@ -162,6 +168,8 @@ def sample_edition() -> dict[str, object]:
                         "source_label": "Field Table",
                         "source_url": field["url"],
                         "reactions": "",
+                        "context": "",
+                        "context_source": "",
                     },
                     {
                         "title": shelf["subject"],
@@ -171,6 +179,8 @@ def sample_edition() -> dict[str, object]:
                         "source_label": "Quiet Shelf",
                         "source_url": shelf["url"],
                         "reactions": "",
+                        "context": "",
+                        "context_source": "",
                     },
                 ],
             },

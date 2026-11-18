@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,18 @@ Bad headlines: "Stablecoin wars heat up". "Markets wobble". "The big AI race".
 Good headlines: "Stripe now lets businesses hold USDC balances, so stablecoin payouts get cheaper".
 "The city council votes Thursday on a 2 million library budget".
 "The river gauge crossed its winter line after 40 mm of rain".
+Each card may include context: one extra plain line, about 25 words, that gives a fuller picture.
+It is either who a lesser-known company or person is and why they matter, or one useful perspective
+fact that is not already in that card's newsletter text, such as a comparison with last quarter,
+a market share, or a short history. It must be useful. Do not add trivia.
+Leave context and context_source empty unless the line is taken from a provided source:
+the excerpt of a fetched article (use that item's source_url), another item in this edition
+(use that item's source_url), or an entry in context_sources (use that entry's url).
+If none of those sources supports the line, leave both fields empty. Do not use outside knowledge.
+Bad context: "Interesting company." "Fun fact: the logo is blue." "Stripe was founded by two brothers."
+Good context: "Stripe processes card payments for online businesses, which is why a USDC balance can lower their payout costs."
+"USDC was about 30 percent of stablecoin transfer volume last quarter, up from 22 percent the quarter before."
+"The library budget was 1.8 million last year, so 2 million is a small increase."
 why_this_matters is one short paragraph of context for the whole brief. If interests are listed, use them
 only to choose which implication to spell out. Interests are not facts and are not sources.
 Do not write market prices, index levels, foreign-exchange rates or crypto prices.
@@ -104,6 +117,8 @@ def _brief_urls(brief: Brief) -> set[str]:
                 story.source_label,
                 story.source_url,
                 story.reactions,
+                story.context,
+                story.context_source,
             ]
         )
     for event in brief.events:
@@ -116,10 +131,21 @@ def _brief_urls(brief: Brief) -> set[str]:
     return {url for url in explicit | found if url}
 
 
-def ensure_grounded(brief: Brief, feed: NewsletterFeed) -> None:
+def ensure_grounded(
+    brief: Brief,
+    feed: NewsletterFeed,
+    extra_urls: set[str] | None = None,
+) -> None:
     """Require every link in the brief to come from the provided feed."""
 
     allowed_urls = {item.source_url for item in feed.items}
+    if extra_urls:
+        allowed_urls |= {url for url in extra_urls if url}
+    for story in _all_stories(brief):
+        if story.context and not story.context_source:
+            raise SynthesisError("context has no source")
+        if story.context_source and not story.context:
+            raise SynthesisError("context source has no context line")
     unknown_urls = sorted(_brief_urls(brief) - allowed_urls)
     if unknown_urls:
         raise SynthesisError(
@@ -420,6 +446,7 @@ def edition_as_dict(
     interests: tuple[str, ...] = (),
     fact_count: int = 5,
     max_cards: int = 3,
+    context_sources: Sequence[Mapping[str, str]] = (),
 ) -> dict[str, Any]:
     """Model input for a personal run. The reader's address is not included."""
 
@@ -441,6 +468,10 @@ def edition_as_dict(
             }
             for item in feed.items
         ],
+        "context_sources": [
+            {"url": item["url"], "title": item["title"], "extract": item["extract"]}
+            for item in context_sources
+        ],
     }
 
 
@@ -456,6 +487,7 @@ def live_edition_synthesis(
     fact_count: int = 5,
     max_cards: int = 3,
     usage: Usage | None = None,
+    context_sources: Sequence[Mapping[str, str]] = (),
 ) -> Brief:
     """Synthesize a personal brief. Callers may inject a fake client in tests."""
 
@@ -482,13 +514,18 @@ def live_edition_synthesis(
             interests=interests,
             fact_count=fact_count,
             max_cards=max_cards,
+            context_sources=context_sources,
         ),
         schema=schema,
         accept=accept,
     )
     if usage is not None:
         usage.add(call_usage)
-    ensure_grounded(brief, feed)
+    ensure_grounded(
+        brief,
+        feed,
+        extra_urls={item["url"] for item in context_sources if item.get("url")},
+    )
     return brief
 
 

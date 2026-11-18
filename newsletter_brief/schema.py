@@ -85,7 +85,14 @@ def _optional_text(value: Any, path: str, *, maximum: int) -> str:
     return cleaned
 
 
-def _story_fields(obj: Mapping[str, Any], path: str, *, reactions: str = "") -> Story:
+def _story_fields(
+    obj: Mapping[str, Any],
+    path: str,
+    *,
+    reactions: str = "",
+    context: str = "",
+    context_source: str = "",
+) -> Story:
     return Story(
         title=_text(obj["title"], f"{path}.title", maximum=140),
         summary=_text(obj["summary"], f"{path}.summary", maximum=420),
@@ -96,15 +103,37 @@ def _story_fields(obj: Mapping[str, Any], path: str, *, reactions: str = "") -> 
         source_label=_text(obj["source_label"], f"{path}.source_label", maximum=140),
         source_url=_https_url(obj["source_url"], f"{path}.source_url"),
         reactions=reactions,
+        context=context,
+        context_source=context_source,
     )
 
 
+def _context_pair(obj: Mapping[str, Any], path: str) -> tuple[str, str]:
+    context = _optional_text(obj["context"], f"{path}.context", maximum=220)
+    if len(context.split()) > 25:
+        raise SchemaError(f"{path}.context must be at most about 25 words")
+    source = obj["context_source"]
+    if not isinstance(source, str):
+        raise SchemaError(f"{path}.context_source must be a string")
+    source = source.strip()
+    if context and not source:
+        raise SchemaError(f"{path}.context needs a context_source URL")
+    if source and not context:
+        raise SchemaError(f"{path}.context_source needs context text")
+    if source:
+        source = _https_url(source, f"{path}.context_source")
+    return context, source
+
+
 def _edition_story(value: Any, path: str) -> Story:
-    obj = _object(value, path, _STORY_KEYS | {"reactions"})
+    obj = _object(value, path, _STORY_KEYS | {"reactions", "context", "context_source"})
+    context, context_source = _context_pair(obj, path)
     return _story_fields(
         obj,
         path,
         reactions=_optional_text(obj["reactions"], f"{path}.reactions", maximum=300),
+        context=context,
+        context_source=context_source,
     )
 
 
@@ -372,6 +401,15 @@ _HEADLINE_RULE = (
     "About 15 words. Everyday words. No teasers, jargon, puns, clickbait, or vague three-word phrases."
 )
 _WHY_LINE_RULE = "One line, in plain words, saying why it matters."
+_CONTEXT_RULE = (
+    "Optional. One plain line, about 25 words: who a lesser-known company or person is and why they matter, "
+    "or one useful perspective fact that is not in the newsletter text. "
+    "Empty unless a provided source supports it. Not trivia."
+)
+_CONTEXT_SOURCE_RULE = (
+    "HTTPS URL of the provided source for context: a fetched article, another item in this edition, "
+    "or a lookup. Empty when context is empty."
+)
 
 
 def _edition_story_schema() -> dict[str, Any]:
@@ -379,11 +417,17 @@ def _edition_story_schema() -> dict[str, Any]:
     properties["title"]["description"] = _HEADLINE_RULE
     properties["why_it_matters"]["description"] = _WHY_LINE_RULE
     properties["reactions"] = {"type": "string", "maxLength": 300}
+    properties["context"] = {"type": "string", "maxLength": 220, "description": _CONTEXT_RULE}
+    properties["context_source"] = {
+        "type": "string",
+        "maxLength": 500,
+        "description": _CONTEXT_SOURCE_RULE,
+    }
     return {
         "type": "object",
         "additionalProperties": False,
         "properties": properties,
-        "required": sorted(_STORY_KEYS | {"reactions"}),
+        "required": sorted(_STORY_KEYS | {"reactions", "context", "context_source"}),
     }
 
 

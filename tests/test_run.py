@@ -324,6 +324,8 @@ class RunTests(unittest.TestCase):
             "source_label": "Harbor Daily",
             "source_url": url,
             "reactions": "The letter calls it the week's main vote.",
+            "context": "",
+            "context_source": "",
         }
         good = {
             "title": "Brief",
