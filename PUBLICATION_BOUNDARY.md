@@ -21,6 +21,8 @@ Approved for publication:
 - a model call that uses any OpenAI-compatible endpoint, chosen by settings;
 - foreign-exchange and crypto figures fetched by code from public sources
   that do not need a key;
+- an optional Model Mania block, off by default, filled from public keyless
+  model catalogs, with saved fixtures and no live calls in tests;
 - optional email of the finished page back to you;
 - schedule examples that are not switched on;
 - synthetic newsletter fixtures, a prepared synthetic response, and a

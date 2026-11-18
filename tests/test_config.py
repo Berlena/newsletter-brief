@@ -27,6 +27,8 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(config.context.lookup)
         self.assertEqual(5, config.fact_count)
         self.assertEqual(2, config.memory.days)
+        self.assertFalse(config.model_mania.enabled)
+        self.assertEqual(60, config.model_mania.window_hours)
 
     def test_hours_default_when_omitted(self) -> None:
         text = """
@@ -215,6 +217,29 @@ show = []
             load_config(
                 self._write(text.replace("https://harbor-daily.example/feed.xml", "http://harbor-daily.example/feed.xml"))
             )
+
+    def test_model_mania_is_off_until_the_flag_is_set(self) -> None:
+        text = """
+[mailbox]
+host = "imap.example"
+user = "you@example.com"
+[senders]
+allow = ["news.example"]
+[output]
+path = "brief.html"
+[model_mania]
+enabled = true
+huggingface = true
+huggingface_min_likes = 250
+"""
+        config = load_config(self._write(text))
+        self.assertTrue(config.model_mania.enabled)
+        self.assertTrue(config.model_mania.huggingface)
+        self.assertEqual(60, config.model_mania.window_hours)
+        self.assertEqual(6, config.model_mania.max_models)
+        self.assertEqual(250, config.model_mania.huggingface_min_likes)
+        with self.assertRaisesRegex(ConfigError, "at most 6|between 1 and 6"):
+            load_config(self._write(text + "\nmax_models = 12\n"))
 
     def _write(self, text: str) -> Path:
         import tempfile

@@ -20,9 +20,11 @@ from newsletter_brief.inbox import (
     read_imap,
 )
 from newsletter_brief.mailer import send_brief
+from newsletter_brief.model_mania import bind_notes, fetch_model_releases
 from newsletter_brief.models import Brief, NewsletterFeed, NewsletterItem, Section, Story
 from newsletter_brief.prefilter import dedupe_links, finish_prefilter
 from newsletter_brief.provider import ProviderError, resolve_provider, resolve_small_model
+from newsletter_brief.email_html import render_email
 from newsletter_brief.renderer import render_html
 from newsletter_brief.secrets import (
     MAILBOX_ACCOUNT,
@@ -145,6 +147,7 @@ def run_brief(
     feed_get: Any | None = None,
     article_get: Any | None = None,
     context_get: Any | None = None,
+    model_get: Any | None = None,
 ) -> Path:
     secrets: list[str] = []
     try:
@@ -163,6 +166,7 @@ def run_brief(
             feed_get=feed_get,
             article_get=article_get,
             context_get=context_get,
+            model_get=model_get,
         )
     except AlreadySent:
         raise
@@ -189,6 +193,7 @@ def _run(
     feed_get: Any | None,
     article_get: Any | None,
     context_get: Any | None,
+    model_get: Any | None,
 ) -> Path:
     def note(message: str) -> None:
         LOGGER.info(redact(message, secrets))
@@ -304,6 +309,19 @@ def _run(
     )
 
     figures = fetch_figures(config.figures, get=figure_get) if config.figures else ()
+    mania = config.model_mania
+    releases = fetch_model_releases(
+        enabled=mania.enabled,
+        window_hours=mania.window_hours,
+        max_models=mania.max_models,
+        timeout_seconds=mania.timeout_seconds,
+        max_bytes=mania.max_bytes,
+        huggingface=mania.huggingface,
+        huggingface_min_likes=mania.huggingface_min_likes,
+        huggingface_max_age_hours=mania.huggingface_max_age_hours,
+        now=moment,
+        get=model_get,
+    )
     input_note = ""
     if trimmed or collected.trimmed:
         input_note = "Some stories were left out because the text cap was reached."
@@ -311,7 +329,11 @@ def _run(
     usage = Usage()
     called_model = False
     if not numbered:
-        brief = replace(_empty_brief(config, moment, figures), input_note=input_note)
+        brief = replace(
+            _empty_brief(config, moment, figures),
+            input_note=input_note,
+            model_releases=releases,
+        )
     else:
         provider = resolve_provider(
             config_base_url=config.llm_base_url,
@@ -337,7 +359,11 @@ def _run(
             )
             note(f"items after the small model: {len(model_items)}")
         if not model_items:
-            brief = replace(_empty_brief(config, moment, figures), input_note=input_note)
+            brief = replace(
+                _empty_brief(config, moment, figures),
+                input_note=input_note,
+                model_releases=releases,
+            )
         else:
             called_model = True
             feed = NewsletterFeed(
@@ -368,6 +394,7 @@ def _run(
                 max_cards=config.max_cards,
                 usage=usage,
                 context_sources=context_sources,
+                model_catalog=releases,
             )
             brief = replace(
                 brief,
@@ -375,6 +402,8 @@ def _run(
                 figures=figures,
                 public_demo=False,
                 input_note=input_note,
+                model_releases=bind_notes(releases, brief.model_notes),
+                model_notes=(),
             )
 
     html = render_html(brief)
@@ -402,7 +431,7 @@ def _run(
             password=password,
             recipient=config.delivery.to,
             subject=config.title,
-            html=html,
+            html=render_email(brief),
             client_factory=smtp_factory,
         )
         sent = True

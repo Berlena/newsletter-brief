@@ -41,6 +41,7 @@ _KNOWN_SECTIONS = {
     "memory",
     "edition",
     "context",
+    "model_mania",
 }
 _DAY_WORDS = {"weekday", "sat", "sun", "weekend"}
 
@@ -105,6 +106,18 @@ class DeliveryConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ModelManiaConfig:
+    enabled: bool = False
+    window_hours: int = 60
+    max_models: int = 6
+    timeout_seconds: int = 8
+    max_bytes: int = 2_000_000
+    huggingface: bool = False
+    huggingface_min_likes: int = 100
+    huggingface_max_age_hours: int = 168
+
+
+@dataclass(frozen=True, slots=True)
 class AppConfig:
     mailbox: MailboxConfig
     senders: tuple[str, ...]
@@ -131,6 +144,7 @@ class AppConfig:
     output_per_million: float | None = None
     small_model: str | None = None
     relevance_min: int = 40
+    model_mania: ModelManiaConfig = ModelManiaConfig()
 
 
 def _text(value: Any, path: str, *, maximum: int) -> str:
@@ -288,6 +302,7 @@ def load_config(path: Path) -> AppConfig:
     if extra_limits:
         raise ConfigError("unknown fields in limits: " + ", ".join(sorted(extra_limits)))
     fact_count, max_cards = _edition(raw.get("edition"))
+    model_mania = _model_mania(raw.get("model_mania"))
     feeds = _feeds(raw.get("feeds"), default_hours=mailbox.hours)
     articles = _articles(raw.get("articles"))
     context = _context_lookup(raw.get("context"))
@@ -335,6 +350,7 @@ def load_config(path: Path) -> AppConfig:
         output_per_million=price_out,
         small_model=small_model,
         relevance_min=relevance_min,
+        model_mania=model_mania,
     )
 
 
@@ -615,6 +631,71 @@ def _memory(value: Any, *, config_path: Path) -> MemoryConfig:
     if not path.is_absolute():
         path = (config_path.parent / path).resolve()
     return MemoryConfig(path=path, days=days)
+
+
+def _model_mania(value: Any) -> ModelManiaConfig:
+    if value is None:
+        return ModelManiaConfig()
+    if not isinstance(value, dict):
+        raise ConfigError("model_mania must be a table")
+    extra = set(value) - {
+        "enabled",
+        "window_hours",
+        "max_models",
+        "timeout_seconds",
+        "max_bytes",
+        "huggingface",
+        "huggingface_min_likes",
+        "huggingface_max_age_hours",
+    }
+    if extra:
+        raise ConfigError("unknown fields in model_mania: " + ", ".join(sorted(extra)))
+    enabled = value.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ConfigError("model_mania.enabled must be true or false")
+    huggingface = value.get("huggingface", False)
+    if not isinstance(huggingface, bool):
+        raise ConfigError("model_mania.huggingface must be true or false")
+    return ModelManiaConfig(
+        enabled=enabled,
+        window_hours=_whole(
+            value.get("window_hours", 60),
+            "model_mania.window_hours",
+            minimum=1,
+            maximum=336,
+        ),
+        max_models=_whole(
+            value.get("max_models", 6),
+            "model_mania.max_models",
+            minimum=1,
+            maximum=6,
+        ),
+        timeout_seconds=_whole(
+            value.get("timeout_seconds", 8),
+            "model_mania.timeout_seconds",
+            minimum=1,
+            maximum=30,
+        ),
+        max_bytes=_whole(
+            value.get("max_bytes", 2_000_000),
+            "model_mania.max_bytes",
+            minimum=10_000,
+            maximum=2_000_000,
+        ),
+        huggingface=huggingface,
+        huggingface_min_likes=_whole(
+            value.get("huggingface_min_likes", 100),
+            "model_mania.huggingface_min_likes",
+            minimum=0,
+            maximum=1_000_000,
+        ),
+        huggingface_max_age_hours=_whole(
+            value.get("huggingface_max_age_hours", 168),
+            "model_mania.huggingface_max_age_hours",
+            minimum=1,
+            maximum=720,
+        ),
+    )
 
 
 def _edition(value: Any) -> tuple[int, int]:

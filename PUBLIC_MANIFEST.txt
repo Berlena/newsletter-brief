@@ -22,8 +22,11 @@ newsletter_brief/figures.py
 newsletter_brief/http_get.py
 newsletter_brief/inbox.py
 newsletter_brief/inputs.py
+newsletter_brief/email_html.py
 newsletter_brief/mailer.py
+newsletter_brief/model_mania.py
 newsletter_brief/models.py
+newsletter_brief/presentation.py
 newsletter_brief/provider.py
 newsletter_brief/renderer.py
 newsletter_brief/prefilter.py
@@ -38,11 +41,15 @@ schedule/github-actions.example.yml
 scripts/audit_public_payload.py
 tests/__init__.py
 tests/fixtures/article.html
+tests/fixtures/huggingface-models.json
+tests/fixtures/openrouter-models.json
 tests/fixtures/canopy-atom.xml
 tests/fixtures/harbor-rss.xml
 tests/fixtures/hostile-feed.xml
 tests/fixtures/wiki-summary.json
 tests/test_context.py
+tests/test_email.py
+tests/test_model_mania.py
 tests/own_inbox_samples.py
 tests/test_articles.py
 tests/test_cli.py

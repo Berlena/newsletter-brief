@@ -5,6 +5,7 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
+from newsletter_brief.presentation import DARK, LIGHT
 from newsletter_brief.renderer import _CSS, render_html
 from newsletter_brief.schema import load_brief
 
@@ -79,12 +80,25 @@ class RendererTests(unittest.TestCase):
             4.5,
         )
         self.assertIn(".story-card summary:hover", _CSS)
+        for name in ("paper", "ink", "muted", "accent"):
+            self.assertGreaterEqual(
+                contrast_ratio(DARK["paper"], DARK[name] if name != "paper" else DARK["ink"]),
+                4.5,
+            )
+        self.assertGreaterEqual(contrast_ratio(DARK["paper"], DARK["ink"]), 4.5)
+        self.assertGreaterEqual(contrast_ratio(DARK["paper"], DARK["muted"]), 4.5)
+        self.assertGreaterEqual(contrast_ratio(LIGHT["lime"], "#4a1028"), 4.5)
+        self.assertIn("prefers-color-scheme: dark", _CSS)
 
     def test_output_matches_the_private_briefs_editorial_structure(self) -> None:
         rendered = render_html(self.brief)
         self.assertIn("5 things to remember today", rendered)
-        self.assertIn("The Big Story", rendered)
-        self.assertIn('<details class="story-card">', rendered)
+        self.assertIn("The big story", rendered)
+        self.assertIn("Start here", rendered)
+        self.assertIn("Why it matters.", rendered)
+        self.assertIn("Key fact.", rendered)
+        self.assertIn('class="markets-toggle"', rendered)
+        self.assertNotIn("openrouter", rendered.casefold())
         self.assertIn("Today’s through-line", rendered)
 
     def test_footer_states_the_source_check(self) -> None:
