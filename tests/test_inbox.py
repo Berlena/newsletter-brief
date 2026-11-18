@@ -7,14 +7,23 @@ from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import imaplib
+
 from newsletter_brief.inbox import (
+    FolderRead,
     InboxError,
     clean_url,
+    decode_modified_utf7,
     default_head,
+    encode_modified_utf7,
     extract_links,
+    format_sender_domains,
+    imap_mailbox_arg,
+    list_sender_domains,
     read_eml_directory,
     read_imap,
     resolve_redirect,
+    section_active,
     sender_allowed,
 )
 from own_inbox_samples import LETTERS, eml_bytes, write_sample_mail
@@ -324,6 +333,275 @@ class EmlTests(unittest.TestCase):
                 head=None,
             )
         self.assertEqual((), collected.items)
+
+
+class FolderModeTests(unittest.TestCase):
+    def test_folder_mode_reads_every_sender_in_the_label(self) -> None:
+        messages = {
+            b"1": _message(
+                "Harbor Daily <desk@harbor-daily.example>",
+                "Library budget vote is on Thursday",
+                "https://harbor-daily.example/library-vote",
+                "Wed, 18 Nov 2026 07:00:00 +0000",
+            ),
+            b"2": _message(
+                "Other <person@other.example>",
+                "A second newsletter",
+                "https://other.example/second-story",
+                "Wed, 18 Nov 2026 07:05:00 +0000",
+            ),
+        }
+        fake = FakeIMAP(messages)
+
+        def connector(host: str, port: int) -> FakeIMAP:
+            return fake
+
+        collected = read_imap(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="mailbox-secret-value",
+            folder="Newsletters",
+            hours=24,
+            allowlist=(),
+            max_messages=30,
+            max_chars=2000,
+            max_total_chars=60000,
+            now=NOW,
+            connector=connector,
+            head=None,
+            accept_all=True,
+            unread_only=True,
+        )
+        urls = [item.source_url for item in collected.items]
+        self.assertEqual(
+            [
+                "https://harbor-daily.example/library-vote",
+                "https://other.example/second-story",
+            ],
+            urls,
+        )
+        self.assertIn(("select", "Newsletters", True), fake.calls)
+        self.assertTrue(any(call[0] == "fetch" and "PEEK" in str(call[1]) for call in fake.calls))
+        self.assertNotIn("store", [call[0] for call in fake.calls])
+
+    def test_unread_search_is_optional_and_still_uses_peek(self) -> None:
+        fake = FakeIMAP({})
+
+        def connector(host: str, port: int) -> FakeIMAP:
+            return fake
+
+        read_imap(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="secret",
+            folder="Newsletters",
+            hours=24,
+            allowlist=("harbor-daily.example",),
+            max_messages=10,
+            max_chars=1000,
+            max_total_chars=5000,
+            now=NOW,
+            connector=connector,
+            unread_only=True,
+        )
+        search = next(call for call in fake.calls if call[0] == "search")
+        self.assertEqual("UNSEEN", search[1][0])
+        self.assertIn("SINCE", search[1])
+        fake.calls.clear()
+        read_imap(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="secret",
+            folder="Newsletters",
+            hours=24,
+            allowlist=("harbor-daily.example",),
+            max_messages=10,
+            max_chars=1000,
+            max_total_chars=5000,
+            now=NOW,
+            connector=connector,
+            unread_only=False,
+        )
+        search = next(call for call in fake.calls if call[0] == "search")
+        self.assertNotIn("UNSEEN", search[1])
+
+    def test_folder_names_are_quoted_and_encoded_before_examine(self) -> None:
+        self.assertEqual("M&APw-ller", encode_modified_utf7("Müller"))
+        self.assertEqual("&U,BTFw-", encode_modified_utf7("台北"))
+        self.assertEqual("Müller", decode_modified_utf7("M&APw-ller"))
+        self.assertEqual("Parent/Child", imap_mailbox_arg("Parent/Child"))
+        self.assertEqual('"City Desk"', imap_mailbox_arg("City Desk"))
+        self.assertEqual('"Newsletters/City Desk"', imap_mailbox_arg("Newsletters/City Desk"))
+        self.assertEqual("Eltern/B&APw-cher", imap_mailbox_arg("Eltern/Bücher"))
+        self.assertEqual(r'"Say \"Hi\""', imap_mailbox_arg('Say "Hi"'))
+
+        class Probe(imaplib.IMAP4):
+            def __init__(self) -> None:
+                self.commands: list[tuple[object, ...]] = []
+                self.untagged_responses: dict[str, list[object]] = {}
+                self.is_readonly = False
+                self.state = "AUTH"
+
+            def _simple_command(self, name: str, *args: object) -> tuple[str, list[bytes]]:
+                self.commands.append((name, args))
+                self.untagged_responses["EXISTS"] = [b"1"]
+                return "OK", [b"1"]
+
+        probe = Probe()
+        probe.select(imap_mailbox_arg("Stadt Büro"), readonly=True)
+        self.assertEqual([("EXAMINE", ('"Stadt B&APw-ro"',))], probe.commands)
+
+        folders = {
+            '"City Desk"': {
+                b"1": _message(
+                    "Desk <ed@city-desk.example>",
+                    "A labelled note",
+                    "https://city-desk.example/note",
+                    "Wed, 18 Nov 2026 07:00:00 +0000",
+                )
+            }
+        }
+
+        class RoutingIMAP(FakeIMAP):
+            def __init__(self) -> None:
+                super().__init__({})
+                self.folders = folders
+
+            def select(self, folder: str, readonly: bool = False) -> tuple[str, list[bytes]]:
+                self.calls.append(("select", folder, readonly))
+                self.messages = self.folders.get(folder, {})
+                if folder not in self.folders:
+                    return "NO", [b"missing"]
+                return "OK", [str(len(self.messages)).encode()]
+
+        fake = RoutingIMAP()
+
+        def connector(host: str, port: int) -> RoutingIMAP:
+            return fake
+
+        collected = read_imap(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="secret",
+            folder="City Desk",
+            hours=24,
+            allowlist=(),
+            max_messages=10,
+            max_chars=1000,
+            max_total_chars=5000,
+            now=NOW,
+            connector=connector,
+            accept_all=True,
+            unread_only=False,
+        )
+        self.assertEqual(["https://city-desk.example/note"], [item.source_url for item in collected.items])
+        self.assertIn(("select", '"City Desk"', True), fake.calls)
+
+    def test_a_weekday_section_is_skipped_on_saturday(self) -> None:
+        saturday = datetime(2026, 11, 21, 8, 0, tzinfo=timezone.utc)
+        self.assertTrue(section_active(("weekday",), NOW))
+        self.assertFalse(section_active(("weekday",), saturday))
+        self.assertTrue(section_active(("sat", "sun"), saturday))
+        fake = FakeIMAP(
+            {
+                b"1": _message(
+                    "Desk <ed@city-desk.example>",
+                    "Weekend letter",
+                    "https://city-desk.example/weekend",
+                    "Sat, 21 Nov 2026 07:00:00 +0000",
+                )
+            }
+        )
+
+        def connector(host: str, port: int) -> FakeIMAP:
+            return fake
+
+        collected = read_imap(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="secret",
+            folder="INBOX",
+            hours=24,
+            allowlist=(),
+            max_messages=10,
+            max_chars=1000,
+            max_total_chars=5000,
+            now=saturday,
+            connector=connector,
+            accept_all=True,
+            folders=(
+                FolderRead(folder="Newsletters/AI", hours=24, name="AI", days=("weekday",)),
+                FolderRead(
+                    folder="Newsletters/Fintech",
+                    hours=72,
+                    name="Fintech",
+                    days=("sat", "sun"),
+                    unread_only=False,
+                ),
+            ),
+        )
+        selected = [call[1] for call in fake.calls if call[0] == "select"]
+        self.assertEqual(["Newsletters/Fintech"], selected)
+        self.assertEqual("Fintech", collected.items[0].section)
+        self.assertEqual("https://city-desk.example/weekend", collected.items[0].source_url)
+
+    def test_sender_helper_prints_domains_and_counts_only(self) -> None:
+        messages = {
+            b"1": _message(
+                "Harbor Daily <desk@harbor-daily.example>",
+                "Secret subject one",
+                "https://harbor-daily.example/one",
+                "Wed, 18 Nov 2026 07:00:00 +0000",
+            ),
+            b"2": _message(
+                "Other <person@other.example>",
+                "Secret subject two",
+                "https://other.example/two",
+                "Wed, 18 Nov 2026 07:05:00 +0000",
+            ),
+            b"3": _message(
+                "Harbor Daily <desk2@harbor-daily.example>",
+                "Secret subject three",
+                "https://harbor-daily.example/three",
+                "Wed, 18 Nov 2026 07:06:00 +0000",
+            ),
+            b"4": _message(
+                "Old <desk@harbor-daily.example>",
+                "Secret subject old",
+                "https://harbor-daily.example/old",
+                "Mon, 02 Nov 2026 07:00:00 +0000",
+            ),
+        }
+        fake = FakeIMAP(messages)
+
+        def connector(host: str, port: int) -> FakeIMAP:
+            return fake
+
+        counts = list_sender_domains(
+            host="imap.example",
+            port=993,
+            user="you@example.com",
+            password="mailbox-secret-value",
+            folders=("Newsletters",),
+            hours=24,
+            now=NOW,
+            connector=connector,
+        )
+        report = format_sender_domains(counts)
+        self.assertEqual("harbor-daily.example 2\nother.example 1\n", report)
+        self.assertNotIn("Secret subject", report)
+        self.assertNotIn("@", report)
+        self.assertNotIn("mailbox-secret-value", report)
+        fetch = next(call for call in fake.calls if call[0] == "fetch")
+        self.assertIn("PEEK", str(fetch[1]))
+        self.assertIn("HEADER.FIELDS", str(fetch[1]))
+        self.assertNotIn("BODY.PEEK[]", str(fetch[1]))
+        self.assertIn(("select", "Newsletters", True), fake.calls)
 
 
 if __name__ == "__main__":

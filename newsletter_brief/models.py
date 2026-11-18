@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +14,9 @@ class NewsletterItem:
     title: str
     excerpt: str
     source_url: str
+    section: str = ""
+    origin: str = "mail"
+    published_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +34,7 @@ class Story:
     key_fact: str
     source_label: str
     source_url: str
+    reactions: str = ""
 
 
 @dataclass(frozen=True, slots=True)

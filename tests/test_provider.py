@@ -194,11 +194,11 @@ class JsonFallbackTests(unittest.TestCase):
                 base_url="http://localhost:11434/v1",
                 client=_client(completions),
             )
-        self.assertEqual(2, len(completions.calls))
+        self.assertEqual(4, len(completions.calls))
 
     def test_schema_invalid_json_fails_loudly(self) -> None:
         completions = RecordingCompletions('{"title":"only"}', fail_schema=True, invalid_on_json='{"title":"only"}')
-        with self.assertRaisesRegex(SynthesisError, "failed validation"):
+        with self.assertRaisesRegex(SynthesisError, "no brief was written"):
             live_synthesis(
                 self.feed,
                 api_key="",

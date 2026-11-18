@@ -73,6 +73,19 @@ def _https_url(value: Any, path: str) -> str:
 
 def _story(value: Any, path: str) -> Story:
     obj = _object(value, path, _STORY_KEYS)
+    return _story_fields(obj, path)
+
+
+def _optional_text(value: Any, path: str, *, maximum: int) -> str:
+    if not isinstance(value, str):
+        raise SchemaError(f"{path} must be a string")
+    cleaned = value.strip()
+    if len(cleaned) > maximum:
+        raise SchemaError(f"{path} must be at most {maximum} characters")
+    return cleaned
+
+
+def _story_fields(obj: Mapping[str, Any], path: str, *, reactions: str = "") -> Story:
     return Story(
         title=_text(obj["title"], f"{path}.title", maximum=140),
         summary=_text(obj["summary"], f"{path}.summary", maximum=420),
@@ -82,6 +95,16 @@ def _story(value: Any, path: str) -> Story:
         key_fact=_text(obj["key_fact"], f"{path}.key_fact", maximum=160),
         source_label=_text(obj["source_label"], f"{path}.source_label", maximum=140),
         source_url=_https_url(obj["source_url"], f"{path}.source_url"),
+        reactions=reactions,
+    )
+
+
+def _edition_story(value: Any, path: str) -> Story:
+    obj = _object(value, path, _STORY_KEYS | {"reactions"})
+    return _story_fields(
+        obj,
+        path,
+        reactions=_optional_text(obj["reactions"], f"{path}.reactions", maximum=300),
     )
 
 
@@ -231,7 +254,7 @@ _EDITION_KEYS = {
     "read_time_minutes",
     "opening_note",
     "why_this_matters",
-    "top_lines",
+    "facts",
     "lead_story",
     "sections",
     "events",
@@ -249,7 +272,7 @@ def _event(value: Any, path: str) -> Event:
     )
 
 
-def parse_edition(value: Any) -> Brief:
+def parse_edition(value: Any, *, fact_count: int = 5, max_cards: int = 3) -> Brief:
     """Validate a personal-inbox brief. This path is not the synthetic demo."""
 
     obj = _object(value, "brief", _EDITION_KEYS)
@@ -265,14 +288,14 @@ def parse_edition(value: Any) -> Brief:
     if not 1 <= read_time <= 30:
         raise SchemaError("brief.read_time_minutes must be between 1 and 30")
 
-    raw_top_lines = obj["top_lines"]
-    if not isinstance(raw_top_lines, list):
-        raise SchemaError("brief.top_lines must be an array")
-    if not 1 <= len(raw_top_lines) <= 8:
-        raise SchemaError("brief.top_lines must contain 1 to 8 items")
+    raw_facts = obj["facts"]
+    if not isinstance(raw_facts, list):
+        raise SchemaError("brief.facts must be an array")
+    if not 1 <= len(raw_facts) <= fact_count:
+        raise SchemaError(f"brief.facts must contain 1 to {fact_count} items")
     top_lines = tuple(
-        _text(line, f"brief.top_lines[{index}]", maximum=120)
-        for index, line in enumerate(raw_top_lines)
+        _text(line, f"brief.facts[{index}]", maximum=120)
+        for index, line in enumerate(raw_facts)
     )
 
     raw_sections = obj["sections"]
@@ -294,10 +317,12 @@ def parse_edition(value: Any) -> Brief:
         raw_stories = section_obj["stories"]
         if not isinstance(raw_stories, list):
             raise SchemaError(f"{section_path}.stories must be an array")
-        if not 1 <= len(raw_stories) <= 3:
-            raise SchemaError(f"{section_path}.stories must contain 1 to 3 stories")
+        if not 1 <= len(raw_stories) <= max_cards:
+            raise SchemaError(
+                f"{section_path}.stories must contain 1 to {max_cards} stories"
+            )
         stories = tuple(
-            _story(story, f"{section_path}.stories[{story_index}]")
+            _edition_story(story, f"{section_path}.stories[{story_index}]")
             for story_index, story in enumerate(raw_stories)
         )
         sections.append(Section(name=name, stories=stories))
@@ -322,7 +347,7 @@ def parse_edition(value: Any) -> Brief:
             obj["why_this_matters"], "brief.why_this_matters", maximum=400
         ),
         top_lines=top_lines,
-        lead_story=_story(obj["lead_story"], "brief.lead_story"),
+        lead_story=_edition_story(obj["lead_story"], "brief.lead_story"),
         sections=tuple(sections),
         events=events,
         public_demo=False,
@@ -342,31 +367,80 @@ _EVENT_SCHEMA: dict[str, Any] = {
     "required": sorted(_EVENT_KEYS),
 }
 
-# Personal runs. There is no figures field: numbers in that box come from code.
-EDITION_JSON_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "additionalProperties": False,
-    "properties": {
-        "title": {"type": "string", "maxLength": 80},
-        "edition": {"type": "string", "maxLength": 80},
-        "date": {"type": "string", "maxLength": 10},
-        "read_time_minutes": {"type": "integer", "minimum": 1, "maximum": 30},
-        "opening_note": {"type": "string", "maxLength": 360},
-        "why_this_matters": {"type": "string", "maxLength": 400},
-        "top_lines": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 8,
-            "items": {"type": "string", "maxLength": 120},
+_HEADLINE_RULE = (
+    "A plain, complete statement of who did what, with the key number if there is one. "
+    "About 15 words. Everyday words. No teasers, jargon, puns, clickbait, or vague three-word phrases."
+)
+_WHY_LINE_RULE = "One line, in plain words, saying why it matters."
+
+
+def _edition_story_schema() -> dict[str, Any]:
+    properties = {key: dict(value) for key, value in _STORY_SCHEMA["properties"].items()}
+    properties["title"]["description"] = _HEADLINE_RULE
+    properties["why_it_matters"]["description"] = _WHY_LINE_RULE
+    properties["reactions"] = {"type": "string", "maxLength": 300}
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": properties,
+        "required": sorted(_STORY_KEYS | {"reactions"}),
+    }
+
+
+def build_edition_schema(*, fact_count: int = 5, max_cards: int = 3) -> dict[str, Any]:
+    """Personal-run schema. There is no figures field: code fills that box."""
+
+    story = _edition_story_schema()
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "title": {"type": "string", "maxLength": 80},
+            "edition": {"type": "string", "maxLength": 80},
+            "date": {"type": "string", "maxLength": 10},
+            "read_time_minutes": {"type": "integer", "minimum": 1, "maximum": 30},
+            "opening_note": {"type": "string", "maxLength": 360},
+            "why_this_matters": {"type": "string", "maxLength": 400},
+            "facts": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": fact_count,
+                "items": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": _HEADLINE_RULE,
+                },
+            },
+            "lead_story": story,
+            "sections": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 6,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "name": {"type": "string", "maxLength": 70},
+                        "stories": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": max_cards,
+                            "items": story,
+                        },
+                    },
+                    "required": sorted(_SECTION_KEYS),
+                },
+            },
+            "events": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 8,
+                "items": _EVENT_SCHEMA,
+            },
         },
-        "lead_story": _STORY_SCHEMA,
-        "sections": BRIEF_JSON_SCHEMA["properties"]["sections"],
-        "events": {
-            "type": "array",
-            "minItems": 0,
-            "maxItems": 8,
-            "items": _EVENT_SCHEMA,
-        },
-    },
-    "required": sorted(_EDITION_KEYS),
-}
+        "required": sorted(_EDITION_KEYS),
+    }
+
+
+# Defaults: five short facts, at most three cards in a section.
+EDITION_JSON_SCHEMA: dict[str, Any] = build_edition_schema()

@@ -9,12 +9,21 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from newsletter_brief.config import ConfigError, load_config
+from newsletter_brief.inbox import InboxError, format_sender_domains, list_sender_domains
 from newsletter_brief.inputs import InputError, load_feed
 from newsletter_brief.provider import DEFAULT_BASE_URL, ProviderError, resolve_provider
 from newsletter_brief.renderer import render_html
-from newsletter_brief.run import RunError, run_brief
+from newsletter_brief.run import AlreadySent, RunError, run_brief
 from newsletter_brief.schema import SchemaError
-from newsletter_brief.secrets import LEGACY_API_ENV, LLM_API_ENV, MAILBOX_ENV, redact
+from newsletter_brief.secrets import (
+    LEGACY_API_ENV,
+    LLM_API_ENV,
+    MAILBOX_ACCOUNT,
+    MAILBOX_ENV,
+    SecretError,
+    redact,
+    require_secret,
+)
 from newsletter_brief.synthesis import (
     SynthesisError,
     live_synthesis,
@@ -83,6 +92,27 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write the HTML file and do not send email.",
     )
+    run.add_argument(
+        "--force",
+        action="store_true",
+        help="Run even if a brief was already sent today.",
+    )
+    senders = commands.add_parser(
+        "senders",
+        help="List sender domains in the configured folders. No model call.",
+    )
+    senders.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="Path to config.toml.",
+    )
+    senders.add_argument(
+        "--hours",
+        type=int,
+        default=None,
+        help="How far back to look. Defaults to the mailbox window. 720 is about 30 days.",
+    )
     return parser
 
 
@@ -131,7 +161,11 @@ def _personal_run(args: argparse.Namespace) -> int:
             config,
             eml_dir=args.eml_dir,
             send=not args.no_send,
+            force=args.force,
         )
+    except AlreadySent as exc:
+        print(str(exc))
+        return 0
     except (ConfigError, SynthesisError, ProviderError, RunError, OSError) as exc:
         print(f"error: {redact(str(exc), _known_secrets())}", file=sys.stderr)
         return 2
@@ -139,8 +173,34 @@ def _personal_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _senders(args: argparse.Namespace) -> int:
+    try:
+        config = load_config(args.config)
+        hours = config.mailbox.hours if args.hours is None else args.hours
+        if isinstance(hours, bool) or not isinstance(hours, int) or not 1 <= hours <= 8760:
+            print("error: --hours must be a whole number from 1 to 8760", file=sys.stderr)
+            return 2
+        password = require_secret(MAILBOX_ENV, MAILBOX_ACCOUNT)
+        folders = [section.folder for section in config.sections] or [config.mailbox.folder]
+        counts = list_sender_domains(
+            host=config.mailbox.host,
+            port=config.mailbox.port,
+            user=config.mailbox.user,
+            password=password,
+            folders=folders,
+            hours=hours,
+        )
+    except (ConfigError, InboxError, SecretError, OSError) as exc:
+        print(f"error: {redact(str(exc), _known_secrets())}", file=sys.stderr)
+        return 2
+    sys.stdout.write(format_sender_domains(counts))
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "run":
         return _personal_run(args)
+    if args.command == "senders":
+        return _senders(args)
     return _demo(args)

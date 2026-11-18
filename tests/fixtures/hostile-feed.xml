@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!DOCTYPE foo [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<rss version="2.0">
+  <channel>
+    <title>&xxe;</title>
+    <item>
+      <title>Hostile</title>
+      <link>https://harbor-daily.example/hostile</link>
+      <pubDate>Wed, 18 Nov 2026 07:00:00 +0000</pubDate>
+      <description>no</description>
+    </item>
+  </channel>
+</rss>

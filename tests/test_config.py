@@ -19,6 +19,13 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(config.delivery.enabled)
         self.assertEqual(("city services", "climate"), config.topics)
         self.assertTrue(str(config.output_path).endswith("output/brief.html"))
+        self.assertEqual("allow", config.sender_mode)
+        self.assertTrue(config.mailbox.unread_only)
+        self.assertEqual((), config.sections)
+        self.assertEqual((), config.feeds)
+        self.assertFalse(config.articles.enabled)
+        self.assertEqual(5, config.fact_count)
+        self.assertEqual(2, config.memory.days)
 
     def test_hours_default_when_omitted(self) -> None:
         text = """
@@ -111,6 +118,102 @@ show = []
         )
         config = load_config(path)
         self.assertEqual((folder / "nested" / "out" / "brief.html").resolve(), config.output_path)
+
+    def test_folder_mode_needs_a_dedicated_folder(self) -> None:
+        base = """
+[mailbox]
+host = "imap.example"
+user = "you@example.com"
+folder = "FOLDER"
+[senders]
+mode = "folder"
+[output]
+path = "brief.html"
+[figures]
+show = []
+"""
+        config = load_config(self._write(base.replace("FOLDER", "Newsletters")))
+        self.assertEqual("folder", config.sender_mode)
+        self.assertEqual((), config.senders)
+        for name in ("INBOX", "inbox", "Inbox"):
+            with self.assertRaisesRegex(ConfigError, "INBOX"):
+                load_config(self._write(base.replace("FOLDER", name)))
+        nested = load_config(self._write(base.replace("FOLDER", "INBOX/Newsletters")))
+        self.assertEqual("INBOX/Newsletters", nested.mailbox.folder)
+
+    def test_folder_mode_rejects_an_allow_list(self) -> None:
+        text = """
+[mailbox]
+host = "imap.example"
+user = "you@example.com"
+folder = "Newsletters"
+[senders]
+mode = "folder"
+allow = ["news.example"]
+[output]
+path = "brief.html"
+"""
+        with self.assertRaisesRegex(ConfigError, "not used"):
+            load_config(self._write(text))
+
+    def test_sections_days_and_feeds(self) -> None:
+        text = """
+[mailbox]
+host = "imap.example"
+user = "you@example.com"
+folder = "INBOX"
+unread_only = false
+[senders]
+allow = ["news.example"]
+
+[[sections]]
+name = "AI"
+folder = "Newsletters/AI"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Longform"
+folder = "Newsletters/Fintech"
+hours = 72
+days = ["sat", "sun"]
+
+[feeds]
+hours = 48
+max_entries = 4
+urls = ["https://harbor-daily.example/feed.xml"]
+
+[[feeds.sources]]
+url = "https://canopy-notes.example/feed.xml"
+section = "AI"
+max_entries = 2
+
+[articles]
+enabled = false
+
+[edition]
+facts = 5
+max_cards = 2
+
+[output]
+path = "brief.html"
+[figures]
+show = []
+"""
+        config = load_config(self._write(text))
+        self.assertFalse(config.mailbox.unread_only)
+        self.assertEqual(("weekday",), config.sections[0].days)
+        self.assertEqual(("sat", "sun"), config.sections[1].days)
+        self.assertEqual("Newsletters/AI", config.sections[0].folder)
+        self.assertEqual(2, len(config.feeds))
+        self.assertEqual("AI", config.feeds[1].section)
+        self.assertEqual(2, config.feeds[1].max_entries)
+        self.assertEqual(5, config.fact_count)
+        self.assertEqual(2, config.max_cards)
+        with self.assertRaisesRegex(ConfigError, "https"):
+            load_config(
+                self._write(text.replace("https://harbor-daily.example/feed.xml", "http://harbor-daily.example/feed.xml"))
+            )
 
     def _write(self, text: str) -> Path:
         import tempfile

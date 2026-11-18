@@ -269,6 +269,145 @@ class RunTests(unittest.TestCase):
         self.assertIn(MAILBOX_SECRET, sent)
         self.assertIn("sent", sent)
 
+    def test_already_sent_skips_the_model(self) -> None:
+        called: list[str] = []
+
+        class Boom:
+            def create(self, **kwargs: object) -> None:
+                called.append("model")
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            mail = root / "mail"
+            write_sample_mail(mail)
+            config_path = root / "config.toml"
+            text = SAMPLE_CONFIG.replace(
+                "[delivery]\nenabled = false\n",
+                "[delivery]\nenabled = true\n"
+                'smtp_host = "smtp.example"\n'
+                "smtp_port = 587\n"
+                'to = "you@example.com"\n',
+            )
+            text += '\n[memory]\npath = "state.json"\ndays = 2\n'
+            config_path.write_text(text, encoding="utf-8")
+            (root / "state.json").write_text(
+                '{"seen": [], "sent": ["2026-11-18"]}\n',
+                encoding="utf-8",
+            )
+            config = load_config(config_path)
+            with (
+                patch("newsletter_brief.run.datetime", FrozenDateTime),
+                self.assertRaises(Exception) as caught,
+            ):
+                try:
+                    run_brief(
+                        config,
+                        eml_dir=mail,
+                        send=True,
+                        now=FROZEN,
+                        client=SimpleNamespace(chat=SimpleNamespace(completions=Boom())),
+                    )
+                except Exception as exc:
+                    self.assertIn("Already sent today", str(exc))
+                    raise
+        self.assertEqual([], called)
+        self.assertIn("Already sent", str(caught.exception))
+
+    def test_feed_items_reach_the_model_and_an_invented_link_is_refused(self) -> None:
+        rss = (Path(__file__).parent / "fixtures" / "harbor-rss.xml").read_bytes()
+        url = "https://harbor-daily.example/library-vote?id=3"
+        story = {
+            "title": "Library budget vote",
+            "summary": "The council posted the agenda.",
+            "why_it_matters": "The vote is the feed item.",
+            "key_fact": "Thursday",
+            "source_label": "Harbor Daily",
+            "source_url": url,
+            "reactions": "The letter calls it the week's main vote.",
+        }
+        good = {
+            "title": "Brief",
+            "edition": "Wednesday",
+            "date": "2026-11-18",
+            "read_time_minutes": 2,
+            "opening_note": "One item.",
+            "why_this_matters": "The library vote is the item.",
+            "facts": ["Library budget vote is on Thursday"],
+            "lead_story": story,
+            "sections": [{"name": "City", "stories": [story]}],
+            "events": [],
+        }
+        bad_story = dict(story, source_url="https://invented.example/not-in-the-feed")
+        bad = dict(good, lead_story=bad_story, sections=[{"name": "City", "stories": [bad_story]}])
+        env = {"LLM_API_KEY": API_KEY, "LLM_MODEL": "mock-model"}
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            mail = root / "mail"
+            mail.mkdir()
+            config_path = root / "config.toml"
+            config_path.write_text(
+                SAMPLE_CONFIG + '\n[feeds]\nurls = ["https://harbor-daily.example/feed.xml"]\nhours = 24\n',
+                encoding="utf-8",
+            )
+            config = load_config(config_path)
+            responses = FakeResponses(json.dumps(good))
+            records: list[str] = []
+            handler = logging.Handler()
+            handler.emit = lambda record: records.append(record.getMessage())  # type: ignore[method-assign]
+            logger = logging.getLogger("newsletter_brief")
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+            try:
+                with (
+                    patch.dict(os.environ, env, clear=False),
+                    patch("newsletter_brief.figures._http_get", side_effect=figure_bytes),
+                    patch("newsletter_brief.run.datetime", FrozenDateTime),
+                ):
+                    run_brief(
+                        config,
+                        eml_dir=mail,
+                        send=False,
+                        now=FROZEN,
+                        client=SimpleNamespace(chat=SimpleNamespace(completions=responses)),
+                        feed_get=lambda feed_url: rss,
+                    )
+            finally:
+                logger.removeHandler(handler)
+            html = (root / "brief.html").read_text(encoding="utf-8")
+            self.assertIn("Reactions", html)
+            assert responses.request is not None
+            payload = json.loads(responses.request["messages"][1]["content"])  # type: ignore[index]
+            self.assertIn(url, [item["source_url"] for item in payload["items"]])
+            self.assertTrue(any("items before prefilter:" in line for line in records))
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            mail = root / "mail"
+            mail.mkdir()
+            config_path = root / "config.toml"
+            config_path.write_text(
+                SAMPLE_CONFIG + '\n[feeds]\nurls = ["https://harbor-daily.example/feed.xml"]\nhours = 24\n',
+                encoding="utf-8",
+            )
+            config = load_config(config_path)
+            responses_bad = FakeResponses(json.dumps(bad))
+            with (
+                patch.dict(os.environ, env, clear=False),
+                patch("newsletter_brief.figures._http_get", side_effect=figure_bytes),
+                patch("newsletter_brief.run.datetime", FrozenDateTime),
+            ):
+                with self.assertRaises(Exception) as caught:
+                    run_brief(
+                        config,
+                        eml_dir=mail,
+                        send=False,
+                        now=FROZEN,
+                        client=SimpleNamespace(chat=SimpleNamespace(completions=responses_bad)),
+                        feed_get=lambda feed_url: rss,
+                    )
+            self.assertIn("absent from the input feed", str(caught.exception))
+            self.assertFalse((root / "brief.html").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

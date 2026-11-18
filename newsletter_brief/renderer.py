@@ -294,6 +294,12 @@ def _source(story: Story) -> str:
     )
 
 
+def _reactions(story: Story) -> str:
+    if not story.reactions:
+        return ""
+    return f'<p class="reactions"><strong>Reactions ·</strong> {escape(story.reactions)}</p>'
+
+
 def _story_card(story: Story) -> str:
     return (
         '<details class="story-card">'
@@ -302,6 +308,7 @@ def _story_card(story: Story) -> str:
         f"<p>{escape(story.summary)}</p>"
         f'<p class="why"><strong>Why·</strong> {escape(story.why_it_matters)}</p>'
         f'<p class="key-fact">Remember · {escape(story.key_fact)}</p>'
+        f"{_reactions(story)}"
         f"{_source(story)}"
         "</div>"
         "</details>"
@@ -452,6 +459,11 @@ _EDITION_CSS = """
   color: var(--muted);
   font-size: 0.9rem;
 }
+.reactions {
+  margin: 0.35rem 0 0;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
 @media (max-width: 680px) {
   .figure-grid { grid-template-columns: 1fr; }
 }
@@ -579,7 +591,8 @@ def _render_edition(brief: Brief) -> str:
         f'        <p class="lead-summary">{escape(lead.summary)}</p>\n'
         f'        <p class="why"><strong>Why·</strong> {escape(lead.why_it_matters)}</p>\n'
         f'        <p class="key-fact">Remember · {escape(lead.key_fact)}</p>\n'
-        '        <blockquote class="thread"><span>Today’s through-line</span>'
+        + (f"        {_reactions(lead)}\n" if lead.reactions else "")
+        + '        <blockquote class="thread"><span>Today’s through-line</span>'
         f"“{escape(brief.opening_note)}”</blockquote>\n"
         f"        {_source(lead)}\n"
         "      </article>\n"

@@ -114,7 +114,7 @@ def sample_edition() -> dict[str, object]:
             "city services and climate. The match, the stall and the book list "
             "are there if you want them."
         ),
-        "top_lines": [letter["subject"] for letter in LETTERS],
+        "facts": [letter["subject"] for letter in LETTERS],
         "lead_story": {
             "title": "The library budget vote is on Thursday",
             "summary": (
@@ -125,6 +125,7 @@ def sample_edition() -> dict[str, object]:
             "key_fact": "The vote is Thursday",
             "source_label": "Harbor Daily",
             "source_url": harbor["url"],
+            "reactions": "",
         },
         "sections": [
             {
@@ -137,6 +138,7 @@ def sample_edition() -> dict[str, object]:
                         "key_fact": "The winter line was crossed",
                         "source_label": "Canopy Notes",
                         "source_url": canopy["url"],
+                        "reactions": "",
                     }
                 ],
             },
@@ -150,6 +152,7 @@ def sample_edition() -> dict[str, object]:
                         "key_fact": "Small ground on Saturday",
                         "source_label": "North Stand",
                         "source_url": stand["url"],
+                        "reactions": "",
                     },
                     {
                         "title": field["subject"],
@@ -158,6 +161,7 @@ def sample_edition() -> dict[str, object]:
                         "key_fact": "One new stall",
                         "source_label": "Field Table",
                         "source_url": field["url"],
+                        "reactions": "",
                     },
                     {
                         "title": shelf["subject"],
@@ -166,6 +170,7 @@ def sample_edition() -> dict[str, object]:
                         "key_fact": "Three novels",
                         "source_label": "Quiet Shelf",
                         "source_url": shelf["url"],
+                        "reactions": "",
                     },
                 ],
             },

@@ -12,6 +12,10 @@ Approved for publication:
   deterministic HTML;
 - a command that reads your own mailbox, or a folder of `.eml` files, and
   writes one HTML file;
+- an optional folder mode, several IMAP folders, and a command that lists
+  sender domains and counts;
+- optional https RSS and Atom feeds, parsed with defusedxml, and recorded
+  feed fixtures;
 - a config example with no passwords in it;
 - a model call that uses any OpenAI-compatible endpoint, chosen by settings;
 - foreign-exchange and crypto figures fetched by code from public sources
