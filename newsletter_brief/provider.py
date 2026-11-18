@@ -13,6 +13,7 @@ DEFAULT_BASE_URL = "https://api.openai.com/v1"
 LLM_BASE_ENV = "LLM_BASE_URL"
 LLM_API_ENV = "LLM_API_KEY"
 LLM_MODEL_ENV = "LLM_MODEL"
+LLM_SMALL_ENV = "LLM_SMALL_MODEL"
 LEGACY_API_ENV = "OPENAI_API_KEY"
 LEGACY_MODEL_ENV = "OPENAI_MODEL"
 LLM_ACCOUNT = "llm"
@@ -102,3 +103,10 @@ def resolve_provider(
         model=model,
         api_key=api_key or None,
     )
+
+
+def resolve_small_model(config_model: str | None = None) -> str | None:
+    """Optional cheaper model. The environment wins. Unset means one model call."""
+
+    value = os.environ.get(LLM_SMALL_ENV, "").strip() or (config_model or "").strip()
+    return value or None

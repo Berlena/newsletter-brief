@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Canopy Notes</title>
+  <updated>2026-11-18T07:30:00Z</updated>
+  <link rel="self" href="https://canopy-notes.example/feed.xml"/>
+  <entry>
+    <title>River gauge is up</title>
+    <link rel="alternate" href="https://canopy-notes.example/river-gauge?utm_source=atom"/>
+    <published>2026-11-18T07:20:00Z</published>
+    <content type="html">&lt;p&gt;The gauge crossed the mark. Read &lt;a href="https://canopy-notes.example/gauge-log"&gt;the log&lt;/a&gt;.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Older canopy note</title>
+    <link rel="alternate" href="https://canopy-notes.example/old-note"/>
+    <published>2026-11-02T07:20:00Z</published>
+    <summary>Outside the window.</summary>
+  </entry>
+</feed>

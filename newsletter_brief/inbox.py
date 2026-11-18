@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import imaplib
 import re
-from collections.abc import Callable, Sequence
+from collections import Counter
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email import message_from_bytes
@@ -16,6 +18,7 @@ from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 import ipaddress
 
 from newsletter_brief.models import NewsletterItem
+from newsletter_brief.prefilter import strip_boilerplate
 
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _TRACKING_KEYS = {
@@ -265,6 +268,7 @@ def extract_links(html: str, plain: str, *, subject: str, max_chars: int) -> tup
     visible = " ".join("".join(parser.text_parts).split())
     if not visible:
         visible = " ".join(plain.split())
+    visible = strip_boilerplate(visible)
     excerpt = visible[:max_chars]
     if subject and subject not in excerpt[: len(subject) + 2]:
         excerpt = f"{subject}\n{excerpt}"[:max_chars]
@@ -342,6 +346,8 @@ def items_from_message(
     max_chars: int,
     fallback_when: datetime | None = None,
     head: HeadGetter | None = None,
+    accept_all: bool = False,
+    section: str = "",
 ) -> tuple[str, datetime | None, tuple[NewsletterItem, ...]] | None:
     """Return (address, when, items) or None when the sender is not allowed."""
 
@@ -349,7 +355,7 @@ def items_from_message(
         return None
     message = message_from_bytes(raw)
     _name, address = parseaddr(message.get("From", ""))
-    if not sender_allowed(address, allowlist):
+    if not accept_all and not sender_allowed(address, allowlist):
         return None
     when = message_when(message, fallback_when)
     display = parseaddr(message.get("From", ""))[0].strip() or address.split("@", 1)[-1]
@@ -367,6 +373,9 @@ def items_from_message(
                 title=title[:180],
                 excerpt=excerpt[:max_chars],
                 source_url=resolved,
+                section=section,
+                origin="mail",
+                published_at=when,
             )
         )
         if index >= _MAX_CANDIDATES_PER_MESSAGE:
@@ -403,6 +412,9 @@ def _assign_ids(collected: list[tuple[datetime | None, tuple[NewsletterItem, ...
                     title=item.title,
                     excerpt=item.excerpt,
                     source_url=item.source_url,
+                    section=item.section,
+                    origin=item.origin,
+                    published_at=item.published_at,
                 )
             )
         if trimmed:
@@ -424,6 +436,8 @@ def read_eml_directory(
     max_total_chars: int,
     now: datetime | None = None,
     head: HeadGetter | None = None,
+    accept_all: bool = False,
+    section: str = "",
 ) -> CollectedMail:
     if not path.is_dir():
         raise InboxError(f"{path} is not a folder of .eml files")
@@ -438,6 +452,8 @@ def read_eml_directory(
             allowlist=allowlist,
             max_chars=max_chars,
             head=head,
+            accept_all=accept_all,
+            section=section,
         )
         if parsed is None:
             skipped += 1
@@ -457,6 +473,124 @@ def read_eml_directory(
 
 def _default_connector(host: str, port: int) -> imaplib.IMAP4_SSL:
     return imaplib.IMAP4_SSL(host, port, timeout=30)
+
+
+def encode_modified_utf7(text: str) -> str:
+    """Encode a mailbox name as IMAP modified UTF-7 (RFC 3501)."""
+
+    pieces: list[str] = []
+    pending: list[str] = []
+
+    def flush() -> None:
+        if not pending:
+            return
+        raw = "".join(pending).encode("utf-16-be")
+        token = base64.b64encode(raw).decode("ascii").rstrip("=").replace("/", ",")
+        pieces.append("&" + token + "-")
+        pending.clear()
+
+    for char in text:
+        code = ord(char)
+        if char == "&":
+            flush()
+            pieces.append("&-")
+        elif 0x20 <= code <= 0x7E:
+            flush()
+            pieces.append(char)
+        else:
+            pending.append(char)
+    flush()
+    return "".join(pieces)
+
+
+def decode_modified_utf7(text: str) -> str:
+    out: list[str] = []
+    index = 0
+    while index < len(text):
+        if text[index] != "&":
+            out.append(text[index])
+            index += 1
+            continue
+        end = text.find("-", index)
+        if end < 0:
+            raise ValueError("truncated modified UTF-7")
+        token = text[index + 1 : end]
+        index = end + 1
+        if token == "":
+            out.append("&")
+            continue
+        padded = token.replace(",", "/")
+        padded += "=" * ((4 - len(padded) % 4) % 4)
+        out.append(base64.b64decode(padded).decode("utf-16-be"))
+    return "".join(out)
+
+
+def _is_imap_atom(value: str) -> bool:
+    if not value:
+        return False
+    for char in value:
+        code = ord(char)
+        if code <= 0x1F or code >= 0x7F or char in ' (){%*"\\]':
+            return False
+    return True
+
+
+def imap_mailbox_arg(folder: str) -> str:
+    """Mailbox argument for EXAMINE. imaplib sends this string unchanged.
+
+    ``select(arg, readonly=True)`` is the EXAMINE command. Names that are not
+    atoms are quoted. Non-ASCII names are modified UTF-7 first.
+    """
+
+    encoded = encode_modified_utf7(folder)
+    if _is_imap_atom(encoded):
+        return encoded
+    escaped = encoded.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def section_active(days: Sequence[str], moment: datetime) -> bool:
+    """True when a section's weekday filter includes this local day."""
+
+    if not days:
+        return True
+    local = moment.astimezone() if moment.tzinfo is not None else moment
+    weekday = local.weekday()
+    token = "sat" if weekday == 5 else "sun" if weekday == 6 else "weekday"
+    return token in days
+
+
+@dataclass(frozen=True, slots=True)
+class FolderRead:
+    folder: str
+    hours: int
+    name: str = ""
+    days: tuple[str, ...] = ()
+    unread_only: bool = True
+
+
+def sender_domain(from_header: str) -> str | None:
+    _name, address = parseaddr(from_header)
+    addr = address.casefold().strip()
+    if "@" not in addr:
+        return None
+    domain = addr.rsplit("@", 1)[-1].strip().strip(">").strip(".")
+    if not domain or "." not in domain or " " in domain:
+        return None
+    return domain
+
+
+def format_sender_domains(counts: Mapping[str, int]) -> str:
+    """Domains and counts only, most common first."""
+
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    if not ordered:
+        return ""
+    return "".join(f"{domain} {count}\n" for domain, count in ordered)
+
+
+_SENDER_FETCH = "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM DATE)])"
+_MAX_SENDER_SCAN = 5000
 
 
 def _parse_fetch(payload: object) -> tuple[bytes | None, datetime | None]:
@@ -479,6 +613,27 @@ def _parse_fetch(payload: object) -> tuple[bytes | None, datetime | None]:
     return raw, internal
 
 
+def _search_ids(imap: imaplib.IMAP4, *criteria: str) -> list[bytes]:
+    try:
+        status, data = imap.search(None, *criteria)
+    except Exception:
+        raise InboxError("could not search the mailbox") from None
+    if status != "OK" or not data or not data[0]:
+        return []
+    return data[0].split()
+
+
+def _examine(imap: imaplib.IMAP4, folder: str) -> None:
+    """Open one folder read-only. imaplib sends EXAMINE when readonly is true."""
+
+    try:
+        status, _data = imap.select(imap_mailbox_arg(folder), readonly=True)
+    except Exception:
+        raise InboxError("could not open the mailbox folder") from None
+    if status != "OK":
+        raise InboxError("could not open the mailbox folder")
+
+
 def read_imap(
     *,
     host: str,
@@ -494,12 +649,28 @@ def read_imap(
     now: datetime | None = None,
     connector: Connector | None = None,
     head: HeadGetter | None = None,
+    accept_all: bool = False,
+    unread_only: bool = True,
+    section: str = "",
+    folders: Sequence[FolderRead] | None = None,
 ) -> CollectedMail:
-    """Read recent mail. SELECT is readonly and the fetch uses BODY.PEEK, so flags stay as they were."""
+    """Read recent mail. The folder is opened with EXAMINE and fetched with BODY.PEEK.
+
+    Flags are not changed. Nothing is moved or deleted. ``unread_only`` adds
+    the UNSEEN search key; it does not mark mail as read.
+    """
 
     moment = now or datetime.now(timezone.utc)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
+    specs = tuple(folders) if folders is not None else (
+        FolderRead(
+            folder=folder,
+            hours=hours,
+            name=section,
+            unread_only=unread_only,
+        ),
+    )
     connect = connector or _default_connector
     try:
         imap = connect(host, port)
@@ -510,48 +681,43 @@ def read_imap(
             imap.login(user, password)
         except Exception:
             raise InboxError("mailbox login failed") from None
-        try:
-            status, _data = imap.select(folder, readonly=True)
-        except Exception:
-            raise InboxError("could not open the mailbox folder") from None
-        if status != "OK":
-            raise InboxError("could not open the mailbox folder")
-        since = imap_since(moment - timedelta(hours=hours))
-        try:
-            status, data = imap.search(None, "SINCE", since)
-        except Exception:
-            raise InboxError("could not search the mailbox") from None
-        if status != "OK" or not data or not data[0]:
-            ids: list[bytes] = []
-        else:
-            ids = data[0].split()
-        ids = ids[-max_messages:]
         grouped: list[tuple[datetime | None, tuple[NewsletterItem, ...]]] = []
         skipped = 0
-        for message_id in ids:
-            try:
-                status, fetched = imap.fetch(message_id, "(INTERNALDATE BODY.PEEK[])")
-            except Exception:
-                raise InboxError("could not read a message") from None
-            if status != "OK":
+        for spec in specs:
+            if not section_active(spec.days, moment):
                 continue
-            raw, internal = _parse_fetch(fetched)
-            if raw is None:
-                continue
-            parsed = items_from_message(
-                raw,
-                allowlist=allowlist,
-                max_chars=max_chars,
-                fallback_when=internal,
-                head=head,
-            )
-            if parsed is None:
-                skipped += 1
-                continue
-            _address, when, items = parsed
-            if not _within_hours(when, now=moment, hours=hours):
-                continue
-            grouped.append((when, items))
+            _examine(imap, spec.folder)
+            since = imap_since(moment - timedelta(hours=spec.hours))
+            criteria: list[str] = ["SINCE", since]
+            if spec.unread_only:
+                criteria.insert(0, "UNSEEN")
+            ids = _search_ids(imap, *criteria)[-max_messages:]
+            for message_id in ids:
+                try:
+                    status, fetched = imap.fetch(message_id, "(INTERNALDATE BODY.PEEK[])")
+                except Exception:
+                    raise InboxError("could not read a message") from None
+                if status != "OK":
+                    continue
+                raw, internal = _parse_fetch(fetched)
+                if raw is None:
+                    continue
+                parsed = items_from_message(
+                    raw,
+                    allowlist=allowlist,
+                    max_chars=max_chars,
+                    fallback_when=internal,
+                    head=head,
+                    accept_all=accept_all,
+                    section=spec.name,
+                )
+                if parsed is None:
+                    skipped += 1
+                    continue
+                _address, when, items = parsed
+                if not _within_hours(when, now=moment, hours=spec.hours):
+                    continue
+                grouped.append((when, items))
         collected = _assign_ids(grouped, max_total_chars=max_total_chars)
         return CollectedMail(
             items=collected.items,
@@ -559,6 +725,62 @@ def read_imap(
             skipped_senders=skipped,
             trimmed=collected.trimmed,
         )
+    finally:
+        try:
+            imap.logout()
+        except Exception:
+            pass
+
+
+def list_sender_domains(
+    *,
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    folders: Sequence[str],
+    hours: int,
+    now: datetime | None = None,
+    connector: Connector | None = None,
+) -> dict[str, int]:
+    """Count sender domains in the named folders. Headers only, still read-only."""
+
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    connect = connector or _default_connector
+    try:
+        imap = connect(host, port)
+    except Exception:
+        raise InboxError("could not connect to the mailbox") from None
+    counts: Counter[str] = Counter()
+    try:
+        try:
+            imap.login(user, password)
+        except Exception:
+            raise InboxError("mailbox login failed") from None
+        since = imap_since(moment - timedelta(hours=hours))
+        for folder in folders:
+            _examine(imap, folder)
+            ids = _search_ids(imap, "SINCE", since)[-_MAX_SENDER_SCAN:]
+            for message_id in ids:
+                try:
+                    status, fetched = imap.fetch(message_id, _SENDER_FETCH)
+                except Exception:
+                    raise InboxError("could not read a message") from None
+                if status != "OK":
+                    continue
+                raw, internal = _parse_fetch(fetched)
+                if raw is None:
+                    continue
+                message = message_from_bytes(raw)
+                when = message_when(message, internal)
+                if not _within_hours(when, now=moment, hours=hours):
+                    continue
+                domain = sender_domain(message.get("From", ""))
+                if domain:
+                    counts[domain] += 1
+        return dict(counts)
     finally:
         try:
             imap.logout()

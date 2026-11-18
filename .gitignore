@@ -14,3 +14,5 @@ output/
 *.eml
 eml/
 inbox/
+# Recent headlines, links, and the already-sent dates for a personal run.
+state.json

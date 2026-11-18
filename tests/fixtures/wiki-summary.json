@@ -1,0 +1,10 @@
+{
+  "type": "standard",
+  "title": "Example Company",
+  "extract": "Example Company processes card payments for online businesses. Its share of stablecoin payout volume rose from 22 percent to 30 percent last quarter.",
+  "content_urls": {
+    "desktop": {
+      "page": "https://en.wikipedia.org/wiki/Example_Company"
+    }
+  }
+}

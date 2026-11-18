@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import unittest
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -120,6 +121,9 @@ def _edition_payload() -> dict[str, object]:
         "key_fact": "The vote is Thursday",
         "source_label": "Harbor Daily",
         "source_url": url,
+        "reactions": "",
+        "context": "",
+        "context_source": "",
     }
     return {
         "title": "Your Morning Brief",
@@ -128,7 +132,7 @@ def _edition_payload() -> dict[str, object]:
         "read_time_minutes": 3,
         "opening_note": "One letter, about the library.",
         "why_this_matters": "The vote is the only item, and it matches city services.",
-        "top_lines": ["Library budget vote is on Thursday"],
+        "facts": ["Library budget vote is on Thursday"],
         "lead_story": story,
         "sections": [{"name": "City", "stories": [story]}],
         "events": [
@@ -196,6 +200,208 @@ class EditionGroundingTests(unittest.TestCase):
         self.assertEqual(EDITION_INSTRUCTIONS, completions.request["messages"][0]["content"])
         self.assertNotIn("super-secret-key", json.dumps(completions.request))
         self.assertIn("city services", completions.request["messages"][1]["content"])
+        self.assertIn("facts", EDITION_JSON_SCHEMA["properties"])
+        self.assertIn("reactions", EDITION_JSON_SCHEMA["properties"]["lead_story"]["properties"])
+
+    def test_prompt_and_schema_require_plain_headlines(self) -> None:
+        self.assertIn("who did what", EDITION_INSTRUCTIONS)
+        self.assertIn("About 15 words", EDITION_INSTRUCTIONS)
+        self.assertIn("why_it_matters is one line in plain words", EDITION_INSTRUCTIONS)
+        self.assertIn("Stablecoin wars heat up", EDITION_INSTRUCTIONS)
+        self.assertIn("Markets wobble", EDITION_INSTRUCTIONS)
+        self.assertIn("The big AI race", EDITION_INSTRUCTIONS)
+        self.assertIn(
+            "Stripe now lets businesses hold USDC balances, so stablecoin payouts get cheaper",
+            EDITION_INSTRUCTIONS,
+        )
+        self.assertIn(
+            "The city council votes Thursday on a 2 million library budget",
+            EDITION_INSTRUCTIONS,
+        )
+        self.assertIn(
+            "The river gauge crossed its winter line after 40 mm of rain",
+            EDITION_INSTRUCTIONS,
+        )
+        lead = EDITION_JSON_SCHEMA["properties"]["lead_story"]["properties"]
+        card = EDITION_JSON_SCHEMA["properties"]["sections"]["items"]["properties"]["stories"][
+            "items"
+        ]["properties"]
+        self.assertEqual(lead["title"]["description"], card["title"]["description"])
+        self.assertIn("who did what", lead["title"]["description"])
+        self.assertIn("About 15 words", lead["title"]["description"])
+        self.assertIn("vague three-word phrases", lead["title"]["description"])
+        self.assertIn("plain words", lead["why_it_matters"]["description"])
+        self.assertIn("why it matters", lead["why_it_matters"]["description"])
+        self.assertEqual(
+            lead["title"]["description"],
+            EDITION_JSON_SCHEMA["properties"]["facts"]["items"]["description"],
+        )
+
+
+class RetryAndCostTests(unittest.TestCase):
+    def test_a_cut_off_answer_is_retried_once(self) -> None:
+        calls: list[str] = []
+
+        class Completions:
+            def create(self, **kwargs: object) -> SimpleNamespace:
+                calls.append(str(kwargs["model"]))
+                if len(calls) == 1:
+                    return SimpleNamespace(
+                        choices=[
+                            SimpleNamespace(
+                                message=SimpleNamespace(content=""),
+                                finish_reason="length",
+                            )
+                        ],
+                        usage=SimpleNamespace(prompt_tokens=100, completion_tokens=50),
+                    )
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=json.dumps(_edition_payload())),
+                            finish_reason="stop",
+                        )
+                    ],
+                    usage=SimpleNamespace(prompt_tokens=80, completion_tokens=40),
+                )
+
+        brief = live_edition_synthesis(
+            _edition_feed(),
+            api_key="k",
+            model="mock-model",
+            base_url=DEFAULT_BASE_URL,
+            title="Your Morning Brief",
+            client=_client(Completions()),
+        )
+        self.assertEqual("Library budget vote", brief.lead_story.title)
+        self.assertEqual(["mock-model", "mock-model"], calls)
+
+    def test_a_second_schema_failure_writes_nothing(self) -> None:
+        class Completions:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def create(self, **kwargs: object) -> SimpleNamespace:
+                self.calls += 1
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content='{"title":"only"}'),
+                            finish_reason="stop",
+                        )
+                    ]
+                )
+
+        completions = Completions()
+        with self.assertRaisesRegex(SynthesisError, "no brief was written"):
+            live_edition_synthesis(
+                _edition_feed(),
+                api_key="k",
+                model="mock-model",
+                base_url=DEFAULT_BASE_URL,
+                title="Your Morning Brief",
+                client=_client(completions),
+            )
+        self.assertEqual(2, completions.calls)
+
+    def test_usage_line_uses_the_configured_prices(self) -> None:
+        from newsletter_brief.synthesis import Usage, format_usage
+
+        line = format_usage(
+            Usage(input_tokens=1000, output_tokens=500, known=True),
+            input_per_million=0.40,
+            output_per_million=1.60,
+        )
+        self.assertEqual(
+            "tokens: 1000 in, 500 out; estimated cost $0.0012",
+            line,
+        )
+        self.assertEqual(
+            "tokens: unavailable",
+            format_usage(Usage(), input_per_million=0.4, output_per_million=1.6),
+        )
+
+    def test_small_model_filters_before_the_brief(self) -> None:
+        from newsletter_brief.models import NewsletterItem
+        from newsletter_brief.synthesis import distill_items
+
+        items = (
+            NewsletterItem(
+                item_id="m1-l1",
+                publication="Harbor Daily",
+                topic="Library",
+                title="Library budget vote",
+                excerpt="The council votes on Thursday.",
+                source_url="https://harbor-daily.example/library-vote",
+                section="City",
+            ),
+            NewsletterItem(
+                item_id="m2-l1",
+                publication="Other",
+                topic="Ads",
+                title="A shoe sale",
+                excerpt="Shoes are on sale.",
+                source_url="https://other.example/shoes",
+                section="City",
+            ),
+        )
+
+        class Completions:
+            def __init__(self) -> None:
+                self.models: list[str] = []
+
+            def create(self, **kwargs: object) -> SimpleNamespace:
+                model = str(kwargs["model"])
+                self.models.append(model)
+                if model == "small-model":
+                    payload = {
+                        "items": [
+                            {
+                                "id": "m1-l1",
+                                "facts": ["The council votes on Thursday."],
+                                "relevance": 80,
+                            },
+                            {"id": "m2-l1", "facts": ["Shoes are on sale."], "relevance": 10},
+                        ]
+                    }
+                else:
+                    body = json.loads(kwargs["messages"][1]["content"])  # type: ignore[index]
+                    self.seen = [item["id"] for item in body["items"]]
+                    payload = _edition_payload()
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=json.dumps(payload)),
+                            finish_reason="stop",
+                        )
+                    ],
+                    usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5),
+                )
+
+        completions = Completions()
+        kept = distill_items(
+            items,
+            api_key="k",
+            model="small-model",
+            base_url=DEFAULT_BASE_URL,
+            interests=("city services",),
+            relevance_min=40,
+            max_chars=500,
+            client=_client(completions),
+        )
+        self.assertEqual(["m1-l1"], [item.item_id for item in kept])
+        self.assertIn("council votes", kept[0].excerpt)
+        brief = live_edition_synthesis(
+            NewsletterFeed(synthetic=False, edition_date=date(2026, 11, 18), items=kept),
+            api_key="k",
+            model="main-model",
+            base_url=DEFAULT_BASE_URL,
+            title="Your Morning Brief",
+            client=_client(completions),
+        )
+        self.assertEqual(["small-model", "main-model"], completions.models)
+        self.assertEqual(["m1-l1"], completions.seen)
+        self.assertFalse(brief.public_demo)
 
 
 if __name__ == "__main__":

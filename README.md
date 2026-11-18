@@ -67,8 +67,14 @@ cp config.example.toml config.toml
 In `config.toml`, set the mailbox host, the address you log in with, the
 folder (usually INBOX), and the sender list. A domain keeps every address at
 that domain. A full address keeps only that one. Mail from anyone else is not
-opened. Topics are optional. They only steer the "why this matters" box. They
-are not treated as facts.
+opened. By default only unread mail in that window is fetched. The folder is
+still opened read-only, and nothing is marked read. Set `unread_only` to false
+if you also want mail you have already opened. Topics are optional. They only
+steer the "why this matters" box. They are not treated as facts.
+
+If your newsletters already sit under a Gmail label, or you want several
+labels, feeds, or a cheaper two-step model, the sections below are the
+settings. The single folder and the allow list stay the default.
 
 Do not type a password or an API key into this file. If you do, the run stops.
 
@@ -193,17 +199,26 @@ unless the folder has no matching mail.
 login and the same app password. Leave it false if you only want the file.
 
 7. Optional: run it every morning on your own computer. That keeps the
-password on the machine. A cron line, every day at 07:15, with your own paths:
+password on the machine. Use the computer's local clock, not a UTC hour, so
+08:00 stays 08:00 when the clocks change in summer and winter. A cron line:
 
 ```text
-15 7 * * * cd /REPLACE/WITH/newsletter-brief && .venv/bin/python -m newsletter_brief run --config /REPLACE/WITH/newsletter-brief/config.toml
+0 8 * * * cd /REPLACE/WITH/newsletter-brief && .venv/bin/python -m newsletter_brief run --config /REPLACE/WITH/newsletter-brief/config.toml
 ```
+
+The run records the local date after a successful send. If the machine wakes
+and the job starts again the same day, it stops before reading mail or calling
+a model and prints `Already sent today`. `--force` runs anyway. `--no-send`
+writes the file and does not record the send.
 
 On a Mac, a launchd agent is a better fit because it runs in your login
 session, where the keychain is available. Copy
 `schedule/com.newsletter-brief.plist.example` to
 `~/Library/LaunchAgents/com.newsletter-brief.plist`, replace the paths, then
-load it with `launchctl load` on that file.
+load it with `launchctl load` on that file. `StartCalendarInterval` at hour 8
+and minute 0 is also local time, so the same summer and winter rule applies.
+GitHub Actions schedules use UTC, which drifts across the clock change. Prefer
+cron or launchd on the machine for 08:00.
 
 There is also a GitHub Actions template at `schedule/github-actions.example.yml`.
 It is not in `.github/workflows`, and the job is switched off, so nothing runs
@@ -211,6 +226,153 @@ it. If you copy it into a workflow and turn it on, your newsletter text passes
 through GitHub's runners and then to your model provider. The repository
 should be private. Do not put the password or the key in the file. Use
 repository secrets.
+
+## If you already use a Gmail label
+
+Gmail shows a label as an IMAP folder. A nested label uses a slash, and a
+space in the name is fine. Point `folder` at that label and set folder mode.
+You do not list senders. Every message in the label is treated as a newsletter.
+
+```toml
+[mailbox]
+folder = "Your Label"
+
+[senders]
+mode = "folder"
+```
+
+This mode is refused when the folder is `INBOX`, in any capitalization, so a
+typo cannot send the whole inbox to a model. `INBOX/Newsletters` is a
+different folder and is allowed.
+
+Everything in that label is sent to the configured model provider, up to the
+size cap. Use a label that contains only newsletters.
+
+To see the sender domains in the folder without calling a model:
+
+```bash
+python -m newsletter_brief senders --config config.toml --hours 720
+```
+
+The command prints domains and counts only. It does not print subjects or
+bodies. Paste the domains into `senders.allow` if you would rather keep the
+allow list. `--hours 720` looks back about 30 days. The default is the window
+in the config.
+
+## Several folders
+
+`[[sections]]` reads more than one label. Each entry has a name, a folder, a
+window in hours, and an optional day filter: `weekday`, `sat`, `sun`, or
+`weekend`. A missing filter means every day. The single-folder settings above
+are used when this list is absent.
+
+```toml
+[[sections]]
+name = "AI"
+folder = "Newsletters/AI"
+hours = 24
+days = "weekday"
+
+[[sections]]
+name = "Longform"
+folder = "Newsletters/Fintech"
+hours = 72
+days = ["sat", "sun"]
+```
+
+On a weekday the longform folder is not opened. On Saturday the AI folder is
+not opened. The day is the computer's local day.
+
+## RSS and Atom feeds
+
+Optional. Feed items from the last N hours join the same pipeline as mail,
+including the link check. Tracking parameters are removed. Only `https` URLs
+are fetched, with a timeout and a size cap. `max_entries` is how many recent
+entries to keep from each feed. A source can name a section. The same link in
+mail and in a feed is kept once, and the mail copy wins.
+
+```toml
+[feeds]
+hours = 24
+max_entries = 8
+urls = ["https://harbor-daily.example/feed.xml"]
+
+[[feeds.sources]]
+url = "https://canopy-notes.example/feed.xml"
+section = "AI"
+max_entries = 5
+```
+
+Feed text is sent to the configured model provider, the same way newsletter
+text is. The offline demo does not fetch feeds.
+
+## Linked articles, and what happens before the model
+
+Fetching the page behind a link is off unless you turn it on. It is https
+only, capped, and uses the same tracking cleanup, timeout, and size limit.
+
+```toml
+[articles]
+enabled = false
+max_articles = 4
+```
+
+Before any model call, plain code drops duplicate links and near-duplicate
+headlines, cuts unsubscribe and view-in-browser footers before it trims the
+text, and keeps at most `limits.max_items_per_section` items in each section
+(the default is 8). The log line is `items before prefilter` and `after`.
+
+The brief asks the model for N short facts (default 5), one lead story, and
+story cards per section up to `edition.max_cards` (default 3). Each headline
+is a plain sentence that says who did what, in about 15 words, not a teaser.
+Each card adds one "why it matters" line in plain words, and can include a
+short reactions line from that source. A card may also include one `context`
+line of about 25 words: who a lesser-known company or person is, or one useful
+comparison that is not already in the newsletter text. That line is left empty
+unless it comes from a fetched article, another item in the same edition, or
+an optional Wikipedia summary. The page shows the source as a small link.
+Wikipedia lookups are off unless you set `context.lookup` to true. They are
+https only, time out, and stop after a few calls. Every link still has to be
+one of the input links.
+
+```toml
+[edition]
+facts = 5
+max_cards = 3
+```
+
+A small JSON file remembers recent headlines and links so the next run can
+skip them. The default is two days, at `output/state.json`, which is
+gitignored. Delete the file if you want those items back.
+
+```toml
+[memory]
+path = "output/state.json"
+days = 2
+```
+
+If the model answer is cut off or does not match the schema, the run tries
+once more and then stops. It does not write a partial page. When the provider
+returns token counts, the run prints a line such as
+`tokens: 1200 in, 400 out; estimated cost $0.0011`. Set your own prices per
+million tokens. They are not a quote.
+
+```toml
+[llm]
+input_per_million = 0.40
+output_per_million = 1.60
+```
+
+Optional two-step mode: set `LLM_SMALL_MODEL`, or `small_model` under `[llm]`.
+That model reads each item and returns a few facts plus a relevance score.
+Items under `relevance_min` (default 40) are dropped. The main model then
+writes the brief. Both calls use the same base URL and the same key. Leave
+the small model unset and there is only one call, as before.
+
+Mistral, as one EU-hosted API, is the same shape of settings as in the setup
+section above. Put the smaller model name in `LLM_SMALL_MODEL` if you want
+the two-step path. Check Mistral's data and training terms yourself. This
+page does not describe them.
 
 ## Privacy
 
@@ -256,9 +418,11 @@ mail, does not call the provider.
 ## Limits
 
 - Only the last N hours are read. The default is 24. The maximum is 168.
-- Only the sender list is read. An empty list is rejected, so the program
+- Only the sender list is read, unless `senders.mode` is `"folder"`. An empty
+  allow list is rejected. Folder mode is refused for `INBOX`, so the program
   does not fall back to reading the whole mailbox.
-- The connection is read-only. Flags are not changed.
+- The connection is read-only. Flags are not changed. Unread-only is the
+  default and does not mark mail as read.
 - There is no Microsoft or Google sign-in flow. Accounts that have dropped
   app passwords cannot be used here.
 - Text sent to the model is capped (30 messages, 20,000 characters each,

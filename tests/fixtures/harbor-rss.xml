@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Harbor Daily</title>
+    <link>https://harbor-daily.example/</link>
+    <item>
+      <title>Library budget vote is on Thursday</title>
+      <link>https://harbor-daily.example/library-vote?utm_source=rss&amp;id=3</link>
+      <pubDate>Wed, 18 Nov 2026 07:00:00 +0000</pubDate>
+      <description><![CDATA[<p>The council posted the agenda.</p><p>See <a href="https://harbor-daily.example/minutes?utm_medium=feed">the minutes</a>.</p>]]></description>
+    </item>
+    <item>
+      <title>Old dredging note</title>
+      <link>https://harbor-daily.example/old-dredging</link>
+      <pubDate>Mon, 02 Nov 2026 07:00:00 +0000</pubDate>
+      <description>Too old to include.</description>
+    </item>
+    <item>
+      <title>Not a secure link</title>
+      <link>http://harbor-daily.example/insecure</link>
+      <pubDate>Wed, 18 Nov 2026 07:10:00 +0000</pubDate>
+      <description>This one is dropped.</description>
+    </item>
+  </channel>
+</rss>

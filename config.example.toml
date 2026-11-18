@@ -26,6 +26,10 @@ user = "you@example.com"
 folder = "INBOX"
 # How far back to read. 24 is one day. 72 covers a weekend. Maximum 168.
 hours = 24
+# Read only mail that is not yet marked read. The folder is still opened
+# read-only, and this program does not mark, move, or delete anything.
+# Set this to false to include mail you have already opened.
+unread_only = true
 
 [senders]
 # Only these senders are read. A domain matches that domain and its subdomains.
@@ -34,6 +38,58 @@ allow = [
   "harbor-daily.example",
   "editor@canopy-notes.example",
 ]
+# If the newsletters already live in one label, you can skip the list:
+# mode = "folder"
+# That is refused when folder is INBOX. Remove "allow" if you set mode.
+
+# Several labels, each with its own window. Omit this to keep the single folder above.
+# [[sections]]
+# name = "AI"
+# folder = "Newsletters/AI"
+# hours = 24
+# days = "weekday"
+#
+# [[sections]]
+# name = "Longform"
+# folder = "Newsletters/Fintech"
+# hours = 72
+# days = ["sat", "sun"]
+
+# [feeds]
+# hours = 24
+# max_entries = 8
+# urls = ["https://harbor-daily.example/feed.xml"]
+#
+# [[feeds.sources]]
+# url = "https://canopy-notes.example/feed.xml"
+# section = "AI"
+# max_entries = 5
+
+# [articles]
+# enabled = false
+# max_articles = 4
+# timeout_seconds = 8
+# max_bytes = 500000
+
+# Optional Wikipedia lookups for the card context line. Off by default.
+# [context]
+# lookup = false
+# max_lookups = 4
+# timeout_seconds = 8
+
+# [edition]
+# facts = 5
+# max_cards = 3
+
+# [memory]
+# path = "output/state.json"
+# days = 2
+
+# [llm]
+# small_model = "a-smaller-model-on-the-same-account"
+# relevance_min = 40
+# input_per_million = 0.40
+# output_per_million = 1.60
 
 [interests]
 # Optional. Used only to steer the "why this matters" box. Not treated as facts.
